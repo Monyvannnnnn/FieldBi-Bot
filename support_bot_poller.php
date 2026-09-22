@@ -1,6 +1,6 @@
 <?php
 /**
- * Real-time Poller Daemon for Telegram Support Bot with Connection Auto-Recovery
+ * Real-time High-Performance Poller Daemon for Telegram Support Bot with Connection Auto-Recovery
  */
 
 set_time_limit(0);
@@ -11,7 +11,7 @@ require_once __DIR__ . '/support_bot.php';
 $botToken = BOT_TOKEN;
 $offset = 0;
 
-echo "[" . date('Y-m-d H:i:s') . "] Support Bot Poller started (Auto-Reconnect Enabled) for token: {$botToken}\n";
+echo "[" . date('Y-m-d H:i:s') . "] Fast Support Bot Poller started (Auto-Reconnect Enabled) for token: {$botToken}\n";
 
 // Helper function to maintain active DB connection
 function checkAndReconnectDb() {
@@ -32,24 +32,33 @@ function checkAndReconnectDb() {
                 require __DIR__ . '/../database.php';
             }
             if (!$pdo) {
-                sleep(2); // Wait 2s if DNS/network is temporarily unreachable
+                sleep(1);
             }
         }
     }
 }
 
+// Persistent cURL handle for ultra-fast HTTPS requests to Telegram API
+$ch = curl_init();
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_TIMEOUT        => 3,
+    CURLOPT_CONNECTTIMEOUT => 2,
+    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_SSL_VERIFYHOST => 2,
+    CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
+]);
+
 while (true) {
     checkAndReconnectDb();
 
-    $url = "https://api.telegram.org/bot{$botToken}/getUpdates?offset={$offset}&timeout=5";
+    $url = "https://api.telegram.org/bot{$botToken}/getUpdates?offset={$offset}&timeout=1&allowed_updates=[\"message\",\"callback_query\"]";
+    curl_setopt($ch, CURLOPT_URL, $url);
     
-    $ctx = stream_context_create([
-        'http' => ['timeout' => 10]
-    ]);
+    $rawResponse = curl_exec($ch);
     
-    $response = @file_get_contents($url, false, $ctx);
-    if ($response !== false) {
-        $data = json_decode($response, true);
+    if ($rawResponse !== false) {
+        $data = json_decode($rawResponse, true);
         
         if (!empty($data['result'])) {
             foreach ($data['result'] as $up) {
@@ -67,12 +76,13 @@ while (true) {
         }
     }
 
-    // Flush and group pending customer messages (3 seconds window)
+    // Flush pending customer messages promptly (3 seconds window)
     try {
         flushPendingCustomerMessages(3);
     } catch (Throwable $e) {
-        // Suppress & silently recover connection on next loop
+        // Suppress & silently recover connection on next loop iteration
     }
-    
-    usleep(500000); // Sleep 0.5s between polls
+
+    // Ultra-short sleep for instant 1-click response time
+    usleep(100000); // 0.1s delay
 }
