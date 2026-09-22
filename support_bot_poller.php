@@ -56,9 +56,9 @@ while (true) {
         }
     }
 
-    // Flush and group pending customer messages (20 seconds window)
+    // Flush and group pending customer messages (3 seconds window)
     try {
-        flushPendingCustomerMessages(20);
+        flushPendingCustomerMessages(3);
     } catch (Throwable $e) {
         // Suppress & silently recover connection on next loop
     }
