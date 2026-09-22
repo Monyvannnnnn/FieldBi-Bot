@@ -20,8 +20,9 @@ if ($requestMethod === 'GET' || isset($_GET['action'])) {
     $ch = curl_init($whApiUrl);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => 0
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
     ]);
     $whRes = curl_exec($ch);
     curl_close($ch);
