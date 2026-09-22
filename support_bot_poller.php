@@ -31,6 +31,9 @@ function checkAndReconnectDb() {
             } elseif (file_exists(__DIR__ . '/../database.php')) {
                 require __DIR__ . '/../database.php';
             }
+            if (!$pdo) {
+                sleep(2); // Wait 2s if DNS/network is temporarily unreachable
+            }
         }
     }
 }

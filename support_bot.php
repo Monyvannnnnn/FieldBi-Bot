@@ -242,36 +242,20 @@ function flushPendingCustomerMessages($forceDelaySeconds = 3) {
         }
 
         // Format Contact Info with Public Username & Mention Link
-        $personalChatUrl = !empty($username) ? "https://t.me/" . ltrim(trim($username), '@') : "tg://user?id={$chatId}";
-
         if (!empty($username)) {
             $cleanUsername = ltrim(trim($username), '@');
-            $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (@" . htmlspecialchars($cleanUsername) . ")\n"
-                            . "🔗 <b>Personal Chat:</b> <a href=\"{$personalChatUrl}\">https://t.me/{$cleanUsername}</a>";
+            $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (@" . htmlspecialchars($cleanUsername) . ")";
         } else {
-            $contactDisplay = "<a href=\"{$personalChatUrl}\"><b>" . htmlspecialchars($customerName) . "</b></a>\n"
-                            . "🆔 <b>User ID:</b> <code>{$chatId}</code>\n"
-                            . "🔗 <b>Personal Chat:</b> <a href=\"{$personalChatUrl}\">Open Chat Profile</a>";
+            $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (ID: <code>{$chatId}</code>)";
         }
 
-        // Single Combined Ticket Message Header with Consolidated Formatting
+        // Single Combined Ticket Message Header
         $ticketHeader = "📩 <b>New Support Request (#{$convId})</b>\n"
                       . "━━━━━━━━━━━━━━\n"
                       . "👤 <b>From:</b> {$contactDisplay}\n"
                       . (!empty($combinedText) ? $combinedText . "\n" : "")
                       . "━━━━━━━━━━━━━━\n"
-                      . "💡 <b>Options to Respond:</b>\n"
-                      . "1️⃣ <b>Reply to this message</b> to answer via Bot\n"
-                      . "2️⃣ <b>Click button below</b> to chat 1-on-1 personally";
-
-        // Inline Keyboard Button for direct 1-on-1 personal chat
-        $inlineKeyboard = [
-            'inline_keyboard' => [
-                [
-                    ['text' => '💬 Chat Personally with Customer', 'url' => $personalChatUrl]
-                ]
-            ]
-        ];
+                      . "<i>Reply to this message in group to answer via Bot.</i>";
 
         // Post ONE combined ticket message into each Telegram Support Group (or Admin fallback)
         foreach ($groups as $g) {
@@ -279,11 +263,11 @@ function flushPendingCustomerMessages($forceDelaySeconds = 3) {
             $apiRes = null;
 
             if ($photoFileId) {
-                $apiRes = sendPhoto($gId, $photoFileId, $ticketHeader, $inlineKeyboard);
+                $apiRes = sendPhoto($gId, $photoFileId, $ticketHeader);
             } elseif ($docFileId) {
-                $apiRes = sendDocument($gId, $docFileId, $ticketHeader, $inlineKeyboard);
+                $apiRes = sendDocument($gId, $docFileId, $ticketHeader);
             } else {
-                $apiRes = sendMessage($gId, $ticketHeader, $inlineKeyboard);
+                $apiRes = sendMessage($gId, $ticketHeader);
             }
 
             if (!empty($apiRes['ok']) && isset($apiRes['result']['message_id'])) {

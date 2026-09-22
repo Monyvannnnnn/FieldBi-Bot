@@ -43,7 +43,8 @@ if ($driver === 'pgsql') {
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
     } catch (PDOException $e) {
-        die("PostgreSQL Connection Failed: " . $e->getMessage() . "\n");
+        $pdo = null;
+        error_log("PostgreSQL Connection Warning: " . $e->getMessage());
     }
 } else {
     // MySQL (XAMPP default)
