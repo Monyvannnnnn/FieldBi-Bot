@@ -748,8 +748,34 @@ function processSupportBotUpdate($update) {
     // D. PRIVATE CHAT WORKFLOW
     // ========================================================
     if ($chatType === 'private') {
-        if ($text === '/start') {
-            sendMessage($chatId, "👋 <b>Welcome to Fieldbi Support!</b>\n\nFieldbi is a technology solutions company specializing in software engineering and digital services.\n\nPlease send your message, question, or application details below, and our support team will assist you shortly.");
+        if (strpos($text, '/start') === 0) {
+            $firstName = trim($message["chat"]["first_name"] ?? '');
+            $lastName  = trim($message["chat"]["last_name"] ?? '');
+            $username  = trim($message["chat"]["username"] ?? '');
+
+            $customerName = trim($firstName . ' ' . $lastName);
+            if (empty($customerName)) {
+                $customerName = 'Customer';
+            }
+
+            // Log initial contact timestamp so first message does not send a duplicate auto-reply
+            if (isset($driver) && $driver === 'pgsql') {
+                $bufStmt = $pdo->prepare("
+                    INSERT INTO pending_customer_messages (customer_chat_id, customer_name, username, message_text, photo_file_id, doc_file_id, processed)
+                    VALUES (:cid, :name, :uname, '/start', NULL, NULL, 1)
+                ");
+                $bufStmt->execute([
+                    ':cid'   => $chatId,
+                    ':name'  => $customerName,
+                    ':uname' => $username
+                ]);
+            } else {
+                $bufStmt = mysqli_prepare($conn, "INSERT INTO pending_customer_messages (customer_chat_id, customer_name, username, message_text, photo_file_id, doc_file_id, processed) VALUES (?, ?, ?, '/start', NULL, NULL, 1)");
+                mysqli_stmt_bind_param($bufStmt, "sss", $chatId, $customerName, $username);
+                mysqli_stmt_execute($bufStmt);
+            }
+
+            sendMessage($chatId, "👋 <b>Welcome to Fieldbi Support!</b>\n\nFieldbi is a technology & software solutions company.\n\nPlease send your message, question, or application details below, and our support team will assist you shortly.");
             return;
         }
 
