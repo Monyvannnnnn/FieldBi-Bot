@@ -27,7 +27,11 @@ foreach ([__DIR__ . '/.env', __DIR__ . '/../.env'] as $envPath) {
     }
 }
 
-require_once __DIR__ . '/../database.php';
+if (file_exists(__DIR__ . '/database.php')) {
+    require_once __DIR__ . '/database.php';
+} elseif (file_exists(__DIR__ . '/../database.php')) {
+    require_once __DIR__ . '/../database.php';
+}
 
 // Telegram Bot Token (Loaded dynamically from .env via TELEGRAM_BOT_TOKEN)
 if (!defined('BOT_TOKEN')) {
