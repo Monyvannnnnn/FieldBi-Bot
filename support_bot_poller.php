@@ -16,13 +16,21 @@ echo "[" . date('Y-m-d H:i:s') . "] Support Bot Poller started (Auto-Reconnect E
 // Helper function to maintain active DB connection
 function checkAndReconnectDb() {
     global $pdo, $conn, $driver;
-    if (isset($driver) && $driver === 'pgsql' && $pdo) {
+    if (isset($driver) && $driver === 'pgsql') {
         try {
-            $pdo->query("SELECT 1");
+            if ($pdo) {
+                $pdo->query("SELECT 1");
+            } else {
+                throw new Exception("PDO is null");
+            }
         } catch (Throwable $t) {
             echo "[" . date('Y-m-d H:i:s') . "] Re-establishing database connection...\n";
             $pdo = null;
-            @require __DIR__ . '/../database.php';
+            if (file_exists(__DIR__ . '/database.php')) {
+                require __DIR__ . '/database.php';
+            } elseif (file_exists(__DIR__ . '/../database.php')) {
+                require __DIR__ . '/../database.php';
+            }
         }
     }
 }
