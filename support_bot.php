@@ -58,7 +58,38 @@ function isValidChatId($chatId) {
     return (bool)preg_match('/^-?\d+$/', (string)$chatId);
 }
 
-
+/**
+ * Check if the business is currently open (Working Hours Logic)
+ * Default: Mon-Fri, 08:00 AM - 05:00 PM (Asia/Phnom_Penh / ICT)
+ */
+function isBusinessOpen() {
+    $tzName = getenv('BUSINESS_TIMEZONE') ?: ($_ENV['BUSINESS_TIMEZONE'] ?? 'Asia/Phnom_Penh');
+    try {
+        $tz = new DateTimeZone($tzName);
+    } catch (Throwable $e) {
+        $tz = new DateTimeZone('Asia/Phnom_Penh');
+    }
+    $now = new DateTime('now', $tz);
+    
+    $day = $now->format('D'); // Mon, Tue, Wed, Thu, Fri, Sat, Sun
+    $time = $now->format('H:i'); // 08:30
+    
+    $workDaysConfig = getenv('BUSINESS_HOURS_DAYS') ?: ($_ENV['BUSINESS_HOURS_DAYS'] ?? 'Mon,Tue,Wed,Thu,Fri');
+    $allowedDays = array_map('trim', explode(',', $workDaysConfig));
+    
+    $startTime = getenv('BUSINESS_HOURS_START') ?: ($_ENV['BUSINESS_HOURS_START'] ?? '08:00');
+    $endTime   = getenv('BUSINESS_HOURS_END') ?: ($_ENV['BUSINESS_HOURS_END'] ?? '17:00');
+    
+    if (!in_array($day, $allowedDays)) {
+        return false;
+    }
+    
+    if ($time < $startTime || $time > $endTime) {
+        return false;
+    }
+    
+    return true;
+}
 
 /**
  * Send text message to Telegram chat
@@ -794,7 +825,11 @@ function processSupportBotUpdate($update) {
 
             // Send auto-acknowledgment ONLY once per 15-minute conversation window
             if (!$recentlyContacted) {
-                sendMessage($chatId, "👋 <b>Thank you for contacting Fieldbi!</b>\n\nFieldbi is a technology & software solutions company. Our team has received your message and will assist you shortly.");
+                if (isBusinessOpen()) {
+                    sendMessage($chatId, "👋 <b>Thank you for contacting Fieldbi!</b>\n\nFieldbi is a technology & software solutions company. Our team has received your message and will assist you shortly.");
+                } else {
+                    sendMessage($chatId, "🌙 <b>Thank you for contacting Fieldbi!</b>\n\nOur office is currently closed. Our regular working hours are <b>Monday – Friday, 8:00 AM – 5:00 PM</b> (ICT).\n\nYour message has been received, and our support team will respond as soon as we open!");
+                }
             }
             return;
         }
