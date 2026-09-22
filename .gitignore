@@ -1,0 +1,19 @@
+# Environment variables (credentials/secrets)
+.env
+.env.local
+.env.*.local
+
+# Logs and databases
+*.log
+logs/
+*.sqlite
+
+# Dependency directories
+/vendor/
+
+# IDE / OS metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
