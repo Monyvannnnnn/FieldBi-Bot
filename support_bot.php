@@ -598,7 +598,92 @@ function processSupportBotUpdate($update) {
     $mainContent = !empty($text) ? $text : $caption;
 
     // ========================================================
-    // B. TICKET REPLY CHECK (Works in Groups AND Admin Private Chat)
+    // B.1 /handled COMMAND WORKFLOW
+    // ========================================================
+    if (preg_match('/^\/handled(?:@\w+)?(?:\s+(?:#)?(\d+))?/i', $text, $matches)) {
+        $agentFirstName = trim($message["from"]["first_name"] ?? '');
+        $agentLastName  = trim($message["from"]["last_name"] ?? '');
+        $agentName      = trim($agentFirstName . ' ' . $agentLastName);
+        if (empty($agentName)) {
+            $agentName = 'Support Agent';
+        }
+
+        $targetConvId = !empty($matches[1]) ? (int)$matches[1] : 0;
+
+        // If no ticket ID in command, check if command was sent as a reply to a ticket card
+        if (!$targetConvId && isset($message["reply_to_message"])) {
+            $replyToId = $message["reply_to_message"]["message_id"];
+            if (isset($driver) && $driver === 'pgsql') {
+                $stmt = $pdo->prepare("
+                    SELECT c.id 
+                    FROM group_messages gm 
+                    LEFT JOIN conversations c ON c.customer_chat_id = gm.customer_chat_id 
+                    WHERE gm.group_message_id = ?
+                ");
+                $stmt->execute([$replyToId]);
+                $targetConvId = (int)$stmt->fetchColumn();
+            } else {
+                $stmt = mysqli_prepare($conn, "
+                    SELECT c.id 
+                    FROM group_messages gm 
+                    LEFT JOIN conversations c ON c.customer_chat_id = gm.customer_chat_id 
+                    WHERE gm.group_message_id = ?
+                ");
+                mysqli_stmt_bind_param($stmt, "i", $replyToId);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+                $targetConvId = (int)($res['id'] ?? 0);
+            }
+        }
+
+        // If still no ticket ID, fallback to most recent conversation
+        if (!$targetConvId) {
+            if (isset($driver) && $driver === 'pgsql') {
+                $targetConvId = (int)$pdo->query("SELECT id FROM conversations ORDER BY id DESC LIMIT 1")->fetchColumn();
+            } else {
+                $res = mysqli_query($conn, "SELECT id FROM conversations ORDER BY id DESC LIMIT 1");
+                $targetConvId = (int)(mysqli_fetch_assoc($res)['id'] ?? 0);
+            }
+        }
+
+        if (!$targetConvId) {
+            sendMessage($chatId, "⚠️ <b>No active tickets found to mark as handled.</b>");
+            return;
+        }
+
+        // Update DB status = 'handled', assigned_agent = $agentName
+        if (isset($driver) && $driver === 'pgsql') {
+            $upStmt = $pdo->prepare("UPDATE conversations SET status = 'handled', assigned_agent = ? WHERE id = ?");
+            $upStmt->execute([$agentName, $targetConvId]);
+        } else {
+            $upStmt = mysqli_prepare($conn, "UPDATE conversations SET status = 'handled', assigned_agent = ? WHERE id = ?");
+            mysqli_stmt_bind_param($upStmt, "si", $agentName, $targetConvId);
+            mysqli_stmt_execute($upStmt);
+        }
+
+        $notification = "✅ <b>Ticket #{$targetConvId} Handled</b> by <b>" . htmlspecialchars($agentName) . "</b>. No further action needed.";
+
+        if ($isGroup) {
+            sendMessage($chatId, $notification);
+        } else {
+            // Broadcast to active support groups if executed in private chat
+            $groups = [];
+            if (isset($driver) && $driver === 'pgsql') {
+                $groups = $pdo->query("SELECT group_chat_id FROM support_groups WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                $res = mysqli_query($conn, "SELECT group_chat_id FROM support_groups WHERE is_active = 1");
+                $groups = mysqli_fetch_all($res, MYSQLI_ASSOC);
+            }
+            foreach ($groups as $g) {
+                sendMessage($g['group_chat_id'], $notification);
+            }
+            sendMessage($chatId, $notification);
+        }
+        return;
+    }
+
+    // ========================================================
+    // B.2 TICKET REPLY CHECK (Works in Groups AND Admin Private Chat)
     // ========================================================
     if (isset($message["reply_to_message"])) {
         $replyToMessageId = $message["reply_to_message"]["message_id"];
@@ -649,15 +734,25 @@ function processSupportBotUpdate($update) {
 
             $userLink = "<a href=\"tg://user?id={$targetCustomerChatId}\">" . htmlspecialchars($cleanCustName) . "</a>";
 
+            // Update DB status = 'handled', assigned_agent = $agentName
+            if (isset($driver) && $driver === 'pgsql') {
+                $upStmt = $pdo->prepare("UPDATE conversations SET status = 'handled', assigned_agent = ? WHERE customer_chat_id = ?");
+                $upStmt->execute([$agentName, $targetCustomerChatId]);
+            } else {
+                $upStmt = mysqli_prepare($conn, "UPDATE conversations SET status = 'handled', assigned_agent = ? WHERE customer_chat_id = ?");
+                mysqli_stmt_bind_param($upStmt, "ss", $agentName, $targetCustomerChatId);
+                mysqli_stmt_execute($upStmt);
+            }
+
             if ($photoFileId) {
                 sendPhoto($targetCustomerChatId, $photoFileId, $caption);
-                sendMessage($chatId, "✅ <b>Photo Delivered</b> to {$userLink} by <i>{$agentName}</i>");
+                sendMessage($chatId, "✅ <b>Handled by {$agentName}</b> (Photo sent to {$userLink})");
             } elseif ($docFileId) {
                 sendDocument($targetCustomerChatId, $docFileId, $caption);
-                sendMessage($chatId, "✅ <b>Document Delivered</b> to {$userLink} by <i>{$agentName}</i>");
+                sendMessage($chatId, "✅ <b>Handled by {$agentName}</b> (Document sent to {$userLink})");
             } elseif (!empty($text)) {
                 sendMessage($targetCustomerChatId, $text);
-                sendMessage($chatId, "✅ <b>Response Delivered</b> to {$userLink} by <i>{$agentName}</i>");
+                sendMessage($chatId, "✅ <b>Handled by {$agentName}</b> (Response sent to {$userLink})");
             }
             return;
         }
