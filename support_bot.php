@@ -94,13 +94,14 @@ function isBusinessOpen() {
 /**
  * Send text message to Telegram chat
  */
-function sendMessage($chatId, $text, $replyMarkup = null) {
+function sendMessage($chatId, $text, $replyMarkup = null, $disableWebPagePreview = false) {
     if (!isValidChatId($chatId)) return null;
     $url = "https://api.telegram.org/bot" . BOT_TOKEN . "/sendMessage";
     $postFields = [
-        'chat_id'    => $chatId,
-        'text'       => $text,
-        'parse_mode' => 'HTML'
+        'chat_id'                  => $chatId,
+        'text'                     => $text,
+        'parse_mode'               => 'HTML',
+        'disable_web_page_preview' => $disableWebPagePreview ? 'true' : 'false'
     ];
     if ($replyMarkup !== null) {
         $postFields['reply_markup'] = is_array($replyMarkup) ? json_encode($replyMarkup) : $replyMarkup;
@@ -392,7 +393,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         $userLink = "<a href=\"tg://user?id={$chatId}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
         if (!empty($username)) {
             $cleanUsername = ltrim(trim($username), '@');
-            $contactDisplay = "{$userLink} (<a href=\"https://t.me/" . htmlspecialchars($cleanUsername) . "\">@" . htmlspecialchars($cleanUsername) . "</a>)";
+            $contactDisplay = "{$userLink} (<code>@{$cleanUsername}</code>)";
             $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
         } else {
             $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
@@ -401,10 +402,10 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
 
         // Single Combined Ticket Message Header (Optimized for Telegram Mobile)
         $ticketHeader = "🎫 <b>NEW CUSTOMER</b> <code>#{$convId}</code>\n"
-                      . "────────────────────\n"
+                      . "─────────────────\n"
                       . "👤 <b>From:</b> {$contactDisplay}\n"
                       . (!empty($combinedText) ? $combinedText . "\n" : "")
-                      . "────────────────────\n"
+                      . "─────────────────\n"
                       . "💡 <i>Reply to this message in group to respond.</i>";
 
         $ticketBtn = [
@@ -426,7 +427,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             } elseif ($docFileId) {
                 $apiRes = sendDocument($gId, $docFileId, $ticketHeader, $ticketBtn);
             } else {
-                $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn);
+                $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn, true);
             }
 
             if (!empty($apiRes['ok']) && isset($apiRes['result']['message_id'])) {
