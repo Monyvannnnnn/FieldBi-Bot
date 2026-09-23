@@ -384,12 +384,13 @@ function flushPendingCustomerMessages($forceDelaySeconds = 3) {
             $convId = $conv['id'];
         }
 
-        // Format Contact Info
+        // Format Contact Info with 1-Tap Clickable Telegram Links
+        $userLink = "<a href=\"tg://user?id={$chatId}\"><b>" . htmlspecialchars($customerName) . "</b></a>";
         if (!empty($username)) {
             $cleanUsername = ltrim(trim($username), '@');
-            $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (<code>@" . htmlspecialchars($cleanUsername) . "</code>)";
+            $contactDisplay = "{$userLink} (<a href=\"https://t.me/" . htmlspecialchars($cleanUsername) . "\">@" . htmlspecialchars($cleanUsername) . "</a>)";
         } else {
-            $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (ID: <code>{$chatId}</code>)";
+            $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
         }
 
         // Single Combined Ticket Message Header (Optimized for Telegram Mobile)
@@ -530,11 +531,12 @@ function processSupportBotUpdate($update) {
                     $customerChatId = $convData['customer_chat_id'] ?? '';
                     $username       = trim($convData['username'] ?? '');
 
+                    $userLink = "<a href=\"tg://user?id={$customerChatId}\"><b>" . htmlspecialchars($customerName) . "</b></a>";
                     if (!empty($username)) {
                         $cleanUsername = ltrim(trim($username), '@');
-                        $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (<code>@" . htmlspecialchars($cleanUsername) . "</code>)";
+                        $contactDisplay = "{$userLink} (<a href=\"https://t.me/" . htmlspecialchars($cleanUsername) . "\">@" . htmlspecialchars($cleanUsername) . "</a>)";
                     } else {
-                        $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (ID: <code>{$customerChatId}</code>)";
+                        $contactDisplay = "{$userLink} (ID: <code>{$customerChatId}</code>)";
                     }
 
                     $rawMsgText = $msg["text"] ?? ($msg["caption"] ?? '');
