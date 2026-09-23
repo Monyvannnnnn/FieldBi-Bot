@@ -6,17 +6,23 @@
 require_once __DIR__ . '/support_bot.php';
 
 $botToken = BOT_TOKEN;
-
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-// GET Request: Register Webhook with Telegram API & Return Status
-if ($requestMethod === 'GET' || isset($_GET['action'])) {
-    header("Content-Type: application/json; charset=utf-8");
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $webhookUrl = "{$scheme}://{$host}/telegram_support_bot/api.php";
+// Helper to detect HTTPS even behind reverse proxies (like Render, Cloudflare, Nginx)
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+        || (($_SERVER['HTTP_X_FORWARDED_SSL'] ?? '') === 'on');
 
-    $whApiUrl = "https://api.telegram.org/bot{$botToken}/setWebhook?url=" . urlencode($webhookUrl);
+$scheme = $isHttps ? 'https' : 'http';
+$host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+
+$currentUrl = "{$scheme}://{$host}{$uriPath}";
+
+// Explicit Webhook Registration (?action=set_webhook)
+if (isset($_GET['action']) && $_GET['action'] === 'set_webhook') {
+    header("Content-Type: application/json; charset=utf-8");
+    $whApiUrl = "https://api.telegram.org/bot{$botToken}/setWebhook?url=" . urlencode($currentUrl);
     $ch = curl_init($whApiUrl);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -30,9 +36,21 @@ if ($requestMethod === 'GET' || isset($_GET['action'])) {
     echo json_encode([
         "ok" => true,
         "message" => "Telegram Support Bot Webhook Endpoint Registered",
-        "webhook_url" => $webhookUrl,
+        "webhook_url" => $currentUrl,
         "webhook_response" => json_decode($whRes, true)
-    ]);
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+// GET Request: Health Check Status
+if ($requestMethod === 'GET') {
+    header("Content-Type: application/json; charset=utf-8");
+    echo json_encode([
+        "ok" => true,
+        "service" => "Fieldbi Telegram Support Bot",
+        "status" => "Online & Running",
+        "endpoint_url" => $currentUrl
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
