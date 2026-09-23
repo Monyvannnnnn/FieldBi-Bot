@@ -360,7 +360,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 3) {
         }
 
         $messageBody  = !empty($rawTextLines) ? implode("\n", $rawTextLines) : '';
-        $combinedText = !empty($messageBody) ? "💬 <b>Message:</b>\n<blockquote>" . $messageBody . "</blockquote>" : '';
+        $combinedText = !empty($messageBody) ? "💬 <b>Message:</b>\n<i>“" . $messageBody . "”</i>" : '';
 
         // Create/Update Conversation Ticket ID (Parameterized Query)
         if (isset($driver) && $driver === 'pgsql') {
@@ -541,7 +541,7 @@ function processSupportBotUpdate($update) {
 
                     $rawMsgText = $msg["text"] ?? ($msg["caption"] ?? '');
                     $messageContent = '';
-                    if (preg_match('/💬 <b>Message:<\/b>\s*\n(?:<blockquote>)?(.*?)(?:<\/blockquote>)?(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
+                    if (preg_match('/💬 <b>Message:<\/b>\s*\n(?:<blockquote>|<i>[“"«]?)?(.*?)(?:<\/blockquote>|[”"»]?<\/i>)?(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
                         $messageContent = trim($matches[1]);
                     } elseif (preg_match('/Message:\s*\n(.*?)(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
                         $messageContent = trim($matches[1]);
@@ -551,7 +551,7 @@ function processSupportBotUpdate($update) {
                                  . "📌 <b>Status:</b> <b>Claimed</b> by <b>" . htmlspecialchars($agentName) . "</b>\n"
                                  . "────────────────────\n"
                                  . "👤 <b>From:</b> {$contactDisplay}\n"
-                                 . (!empty($messageContent) ? "💬 <b>Message:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "")
+                                 . (!empty($messageContent) ? "💬 <b>Message:</b>\n<i>“" . htmlspecialchars($messageContent) . "”</i>\n" : "")
                                  . "────────────────────\n"
                                  . "💡 <i>Reply to this message in group to respond.</i>";
 
