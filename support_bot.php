@@ -410,8 +410,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         $ticketBtn = [
             'inline_keyboard' => [
                 [
-                    ['text' => '💬 Contact Customer', 'url' => $contactUrl],
-                    ['text' => '✋ Claim Ticket', 'callback_data' => 'claim_' . $convId]
+                    ['text' => '💬 Contact Customer', 'url' => $contactUrl]
                 ]
             ]
         ];
