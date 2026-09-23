@@ -360,7 +360,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 3) {
         }
 
         $messageBody  = !empty($rawTextLines) ? implode("\n", $rawTextLines) : '';
-        $combinedText = !empty($messageBody) ? "💬 <b>Message:</b>\n" . $messageBody : '';
+        $combinedText = !empty($messageBody) ? "💬 <b>Message:</b>\n<blockquote>" . $messageBody . "</blockquote>" : '';
 
         // Create/Update Conversation Ticket ID (Parameterized Query)
         if (isset($driver) && $driver === 'pgsql') {
@@ -387,18 +387,26 @@ function flushPendingCustomerMessages($forceDelaySeconds = 3) {
         // Format Contact Info
         if (!empty($username)) {
             $cleanUsername = ltrim(trim($username), '@');
-            $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (@" . htmlspecialchars($cleanUsername) . ")";
+            $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (<code>@" . htmlspecialchars($cleanUsername) . "</code>)";
         } else {
             $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (ID: <code>{$chatId}</code>)";
         }
 
-        // Single Combined Ticket Message Header
-        $ticketHeader = "📩 <b>New Support Request (#{$convId})</b>\n"
-                      . "━━━━━━━━━━━━━━\n"
+        // Single Combined Ticket Message Header (Optimized for Telegram Mobile)
+        $ticketHeader = "🎫 <b>NEW SUPPORT TICKET</b> <code>#{$convId}</code>\n"
+                      . "────────────────────\n"
                       . "👤 <b>From:</b> {$contactDisplay}\n"
                       . (!empty($combinedText) ? $combinedText . "\n" : "")
-                      . "━━━━━━━━━━━━━━\n"
-                      . "<i>Reply to this message in group to answer via Bot.</i>";
+                      . "────────────────────\n"
+                      . "💡 <i>Reply to this message in group to respond.</i>";
+
+        $claimBtn = [
+            'inline_keyboard' => [
+                [
+                    ['text' => '🙋‍♂️ Claim Ticket #' . $convId, 'callback_data' => 'claim_' . $convId]
+                ]
+            ]
+        ];
 
         // Post ONE combined ticket message into each Telegram Support Group (or Admin fallback)
         foreach ($groups as $g) {
@@ -407,11 +415,11 @@ function flushPendingCustomerMessages($forceDelaySeconds = 3) {
             $apiRes = null;
 
             if ($photoFileId) {
-                $apiRes = sendPhoto($gId, $photoFileId, $ticketHeader);
+                $apiRes = sendPhoto($gId, $photoFileId, $ticketHeader, $claimBtn);
             } elseif ($docFileId) {
-                $apiRes = sendDocument($gId, $docFileId, $ticketHeader);
+                $apiRes = sendDocument($gId, $docFileId, $ticketHeader, $claimBtn);
             } else {
-                $apiRes = sendMessage($gId, $ticketHeader);
+                $apiRes = sendMessage($gId, $ticketHeader, $claimBtn);
             }
 
             if (!empty($apiRes['ok']) && isset($apiRes['result']['message_id'])) {
@@ -524,31 +532,39 @@ function processSupportBotUpdate($update) {
 
                     if (!empty($username)) {
                         $cleanUsername = ltrim(trim($username), '@');
-                        $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (@" . htmlspecialchars($cleanUsername) . ")";
+                        $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (<code>@" . htmlspecialchars($cleanUsername) . "</code>)";
                     } else {
                         $contactDisplay = "<b>" . htmlspecialchars($customerName) . "</b> (ID: <code>{$customerChatId}</code>)";
                     }
 
                     $rawMsgText = $msg["text"] ?? ($msg["caption"] ?? '');
                     $messageContent = '';
-                    if (preg_match('/💬 <b>Message:<\/b>\s*\n(.*?)(?=\n━|$)/s', $rawMsgText, $matches)) {
+                    if (preg_match('/💬 <b>Message:<\/b>\s*\n(?:<blockquote>)?(.*?)(?:<\/blockquote>)?(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
                         $messageContent = trim($matches[1]);
-                    } elseif (preg_match('/Message:\s*\n(.*?)(?=\n━|$)/s', $rawMsgText, $matches)) {
+                    } elseif (preg_match('/Message:\s*\n(.*?)(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
                         $messageContent = trim($matches[1]);
                     }
 
-                    $claimedBody = "📩 <b>Support Request (#{$convId})</b>\n"
-                                 . "📌 <b>Assigned to:</b> <b>" . htmlspecialchars($agentName) . "</b>\n"
-                                 . "━━━━━━━━━━━━━━\n"
+                    $claimedBody = "🎫 <b>SUPPORT TICKET</b> <code>#{$convId}</code>\n"
+                                 . "📌 <b>Status:</b> <b>Claimed</b> by <b>" . htmlspecialchars($agentName) . "</b>\n"
+                                 . "────────────────────\n"
                                  . "👤 <b>From:</b> {$contactDisplay}\n"
-                                 . (!empty($messageContent) ? "💬 <b>Message:</b>\n" . htmlspecialchars($messageContent) . "\n" : "")
-                                 . "━━━━━━━━━━━━━━\n"
-                                 . "<i>Reply to this message in group to answer via Bot.</i>";
+                                 . (!empty($messageContent) ? "💬 <b>Message:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "")
+                                 . "────────────────────\n"
+                                 . "💡 <i>Reply to this message in group to respond.</i>";
+
+                    $claimedBtn = [
+                        'inline_keyboard' => [
+                            [
+                                ['text' => '✅ Claimed by ' . $agentName, 'callback_data' => 'claimed']
+                            ]
+                        ]
+                    ];
 
                     if (isset($msg["caption"])) {
-                        editMessageCaption($gChatId, $gMsgId, $claimedBody);
+                        editMessageCaption($gChatId, $gMsgId, $claimedBody, $claimedBtn);
                     } else {
-                        editMessageText($gChatId, $gMsgId, $claimedBody);
+                        editMessageText($gChatId, $gMsgId, $claimedBody, $claimedBtn);
                     }
                 }
             }
@@ -641,13 +657,13 @@ function processSupportBotUpdate($update) {
 
             if ($photoFileId) {
                 sendPhoto($targetCustomerChatId, $photoFileId, $caption);
-                sendMessage($chatId, "✅ <b>Photo sent to {$userLink}</b> by <i>{$agentName}</i>!");
+                sendMessage($chatId, "✅ <b>Photo Delivered</b> to {$userLink} by <i>{$agentName}</i>");
             } elseif ($docFileId) {
                 sendDocument($targetCustomerChatId, $docFileId, $caption);
-                sendMessage($chatId, "✅ <b>Document sent to {$userLink}</b> by <i>{$agentName}</i>!");
+                sendMessage($chatId, "✅ <b>Document Delivered</b> to {$userLink} by <i>{$agentName}</i>");
             } elseif (!empty($text)) {
                 sendMessage($targetCustomerChatId, $text);
-                sendMessage($chatId, "✅ <b>Response sent to {$userLink}</b> by <i>{$agentName}</i>!");
+                sendMessage($chatId, "✅ <b>Response Delivered</b> to {$userLink} by <i>{$agentName}</i>");
             }
             return;
         }
@@ -687,7 +703,7 @@ function processSupportBotUpdate($update) {
                 mysqli_stmt_bind_param($stmt, "ss", $chatId, $groupTitle);
                 mysqli_stmt_execute($stmt);
             }
-            sendMessage($chatId, "🛡️ <b>Support Group Authorized!</b>\n\nThis group (<b>" . htmlspecialchars($groupTitle) . "</b>) is now active and will receive all incoming customer support tickets.");
+            sendMessage($chatId, "🛡️ <b>SUPPORT GROUP AUTHORIZED</b>\n────────────────────\nGroup: <b>" . htmlspecialchars($groupTitle) . "</b>\nStatus: 🟢 <b>Active</b>\n\n<i>This group will now receive all incoming customer support tickets.</i>");
         }
 
         // Ignore commands or empty messages in group
@@ -732,13 +748,13 @@ function processSupportBotUpdate($update) {
 
             if ($photoFileId) {
                 sendPhoto($targetCustomerChatId, $photoFileId, $caption);
-                sendMessage($chatId, "✅ <b>Photo sent to {$userLink}</b> by <i>{$agentName}</i>!");
+                sendMessage($chatId, "✅ <b>Photo Delivered</b> to {$userLink} by <i>{$agentName}</i>");
             } elseif ($docFileId) {
                 sendDocument($targetCustomerChatId, $docFileId, $caption);
-                sendMessage($chatId, "✅ <b>Document sent to {$userLink}</b> by <i>{$agentName}</i>!");
+                sendMessage($chatId, "✅ <b>Document Delivered</b> to {$userLink} by <i>{$agentName}</i>");
             } elseif (!empty($text)) {
                 sendMessage($targetCustomerChatId, $text);
-                sendMessage($chatId, "✅ <b>Response sent to {$userLink}</b> by <i>{$agentName}</i>!");
+                sendMessage($chatId, "✅ <b>Response Delivered</b> to {$userLink} by <i>{$agentName}</i>");
             }
         }
         return;
@@ -775,7 +791,7 @@ function processSupportBotUpdate($update) {
                 mysqli_stmt_execute($bufStmt);
             }
 
-            sendMessage($chatId, "👋 <b>Welcome to Fieldbi Support!</b>\n\nFieldbi is a technology & software solutions company.\n\nPlease send your message, question, or application details below, and our support team will assist you shortly.");
+            sendMessage($chatId, "👋 <b>Welcome to Fieldbi Support!</b>\n────────────────────\nFieldbi is a technology & software solutions company.\n\n💬 Please send your message, question, or inquiry below, and our support team will assist you shortly.");
             return;
         }
 
@@ -791,7 +807,7 @@ function processSupportBotUpdate($update) {
                 $resP = mysqli_query($conn, "SELECT COUNT(*) as c FROM pending_customer_messages WHERE processed = 0");
                 $pCount = (int)mysqli_fetch_assoc($resP)['c'];
             }
-            sendMessage($chatId, "📊 <b>Bot System Status</b>\n\n🟢 Active Support Groups: <b>{$gCount}</b>\n⏳ Pending Unprocessed Messages: <b>{$pCount}</b>");
+            sendMessage($chatId, "📊 <b>BOT SYSTEM STATUS</b>\n────────────────────\n🟢 <b>Active Support Groups:</b> <code>{$gCount}</code>\n⏳ <b>Pending Messages:</b> <code>{$pCount}</code>");
             return;
         }
 
@@ -852,9 +868,9 @@ function processSupportBotUpdate($update) {
             // Send auto-acknowledgment ONLY once per 15-minute conversation window
             if (!$recentlyContacted) {
                 if (isBusinessOpen()) {
-                    sendMessage($chatId, "👋 <b>Thank you for contacting Fieldbi!</b>\n\nFieldbi is a technology & software solutions company. Our team has received your message and will assist you shortly.");
+                    sendMessage($chatId, "👋 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.");
                 } else {
-                    sendMessage($chatId, "🌙 <b>Thank you for contacting Fieldbi!</b>\n\nOur office is currently closed. Our regular working hours are <b>Monday – Friday, 8:00 AM – 5:00 PM</b> (ICT).\n\nYour message has been received, and our support team will respond as soon as we open!");
+                    sendMessage($chatId, "🌙 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!");
                 }
             }
             return;
