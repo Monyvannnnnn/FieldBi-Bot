@@ -390,14 +390,16 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         if (preg_match('/^(.*?)\s*(\(@[a-zA-Z0-9_]+\))$/', $customerName, $matches)) {
             $cleanCustName = trim($matches[1]);
         }
-        $userLink = "<a href=\"tg://user?id={$chatId}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
+
         if (!empty($username)) {
             $cleanUsername = ltrim(trim($username), '@');
-            $contactDisplay = "{$userLink} (<code>@{$cleanUsername}</code>)";
             $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
+            $userLink = "<a href=\"{$contactUrl}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
+            $contactDisplay = "{$userLink} (<a href=\"{$contactUrl}\">@" . htmlspecialchars($cleanUsername) . "</a>)";
         } else {
-            $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
             $contactUrl = "tg://user?id={$chatId}";
+            $userLink = "<a href=\"{$contactUrl}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
+            $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
         }
 
         // Single Combined Ticket Message Header (Optimized for Telegram Mobile)
@@ -542,15 +544,16 @@ function processSupportBotUpdate($update) {
                     if (preg_match('/^(.*?)\s*(\(@[a-zA-Z0-9_]+\))$/', $customerName, $matches)) {
                         $cleanCustName = trim($matches[1]);
                     }
-                    $userLink = "<a href=\"tg://user?id={$customerChatId}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
 
                     if (!empty($username)) {
                         $cleanUsername = ltrim(trim($username), '@');
-                        $contactDisplay = "{$userLink} (<a href=\"https://t.me/" . htmlspecialchars($cleanUsername) . "\">@" . htmlspecialchars($cleanUsername) . "</a>)";
                         $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
+                        $userLink = "<a href=\"{$contactUrl}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
+                        $contactDisplay = "{$userLink} (<a href=\"{$contactUrl}\">@" . htmlspecialchars($cleanUsername) . "</a>)";
                     } else {
-                        $contactDisplay = "{$userLink} (ID: <code>{$customerChatId}</code>)";
                         $contactUrl = "tg://user?id={$customerChatId}";
+                        $userLink = "<a href=\"{$contactUrl}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
+                        $contactDisplay = "{$userLink} (ID: <code>{$customerChatId}</code>)";
                     }
 
                     $rawMsgText = $msg["text"] ?? ($msg["caption"] ?? '');
