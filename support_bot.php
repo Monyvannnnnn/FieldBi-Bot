@@ -270,7 +270,7 @@ function editMessageCaption($chatId, $messageId, $caption, $replyMarkup = null) 
 /**
  * Flush and group pending customer messages (default 3 seconds delay for snappy response)
  */
-function flushPendingCustomerMessages($forceDelaySeconds = 3) {
+function flushPendingCustomerMessages($forceDelaySeconds = 5) {
     global $pdo, $conn, $driver;
 
     if (isset($driver) && $driver === 'pgsql') {
@@ -394,20 +394,12 @@ function flushPendingCustomerMessages($forceDelaySeconds = 3) {
         }
 
         // Single Combined Ticket Message Header (Optimized for Telegram Mobile)
-        $ticketHeader = "🎫 <b>NEW SUPPORT TICKET</b> <code>#{$convId}</code>\n"
+        $ticketHeader = "🎫 <b>NEW CUSTOMER</b> <code>#{$convId}</code>\n"
                       . "────────────────────\n"
                       . "👤 <b>From:</b> {$contactDisplay}\n"
                       . (!empty($combinedText) ? $combinedText . "\n" : "")
                       . "────────────────────\n"
                       . "💡 <i>Reply to this message in group to respond.</i>";
-
-        $claimBtn = [
-            'inline_keyboard' => [
-                [
-                    ['text' => '🙋‍♂️ Claim Ticket #' . $convId, 'callback_data' => 'claim_' . $convId]
-                ]
-            ]
-        ];
 
         // Post ONE combined ticket message into each Telegram Support Group (or Admin fallback)
         foreach ($groups as $g) {
@@ -416,11 +408,11 @@ function flushPendingCustomerMessages($forceDelaySeconds = 3) {
             $apiRes = null;
 
             if ($photoFileId) {
-                $apiRes = sendPhoto($gId, $photoFileId, $ticketHeader, $claimBtn);
+                $apiRes = sendPhoto($gId, $photoFileId, $ticketHeader);
             } elseif ($docFileId) {
-                $apiRes = sendDocument($gId, $docFileId, $ticketHeader, $claimBtn);
+                $apiRes = sendDocument($gId, $docFileId, $ticketHeader);
             } else {
-                $apiRes = sendMessage($gId, $ticketHeader, $claimBtn);
+                $apiRes = sendMessage($gId, $ticketHeader);
             }
 
             if (!empty($apiRes['ok']) && isset($apiRes['result']['message_id'])) {
@@ -887,7 +879,7 @@ if (basename(__FILE__) == basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
 
     if ($update) {
         processSupportBotUpdate($update);
-        flushPendingCustomerMessages(3);
+        flushPendingCustomerMessages(5);
     } else {
         header('Content-Type: application/json');
         echo json_encode(['status' => 'online', 'bot' => 'Telegram Customer Support Bot']);
