@@ -11,5 +11,8 @@ WORKDIR /var/www/html
 # Copy repository files into the container
 COPY . /var/www/html/
 
-# Run the real-time polling daemon by default
-CMD ["php", "support_bot_poller.php"]
+# Make startup script executable
+RUN chmod +x /var/www/html/start.sh
+
+# Run startup script (starts web port listener + poller daemon)
+CMD ["/var/www/html/start.sh"]

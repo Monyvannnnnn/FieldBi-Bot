@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: FieldBi-Bot-1
+    runtime: docker
+    plan: free
+    region: singapore
+    envVars:
+      - key: DB_DRIVER
+        value: pgsql
+      - key: DB_HOST
+        value: aws-0-ap-northeast-1.pooler.supabase.com
+      - key: DB_PORT
+        value: "6543"
+      - key: DB_NAME
+        value: postgres
+      - key: DB_USER
+        value: postgres.musuphopvnxlvqsplfit
+      - key: DB_PASS
+        value: Fieldbi.310394
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8689610838:AAGSjL9MI15UcCFZVERFDOAEiO74P7xDc10
+      - key: TELEGRAM_ADMIN_CHAT_ID
+        value: "7892238736"
