@@ -360,7 +360,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 3) {
         }
 
         $messageBody  = !empty($rawTextLines) ? implode("\n", $rawTextLines) : '';
-        $combinedText = !empty($messageBody) ? "💬 <b>Message:</b>\n<i>“" . $messageBody . "”</i>" : '';
+        $combinedText = !empty($messageBody) ? "💬 <b>Message:</b>\n<blockquote>" . $messageBody . "</blockquote>" : '';
 
         // Create/Update Conversation Ticket ID (Parameterized Query)
         if (isset($driver) && $driver === 'pgsql') {
@@ -551,7 +551,7 @@ function processSupportBotUpdate($update) {
                                  . "📌 <b>Status:</b> <b>Claimed</b> by <b>" . htmlspecialchars($agentName) . "</b>\n"
                                  . "────────────────────\n"
                                  . "👤 <b>From:</b> {$contactDisplay}\n"
-                                 . (!empty($messageContent) ? "💬 <b>Message:</b>\n<i>“" . htmlspecialchars($messageContent) . "”</i>\n" : "")
+                                 . (!empty($messageContent) ? "💬 <b>Message:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "")
                                  . "────────────────────\n"
                                  . "💡 <i>Reply to this message in group to respond.</i>";
 
