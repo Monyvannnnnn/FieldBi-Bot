@@ -384,13 +384,19 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             $convId = $conv['id'];
         }
 
-        // Format Contact Info with 1-Tap Clickable Telegram Links
-        $userLink = "<a href=\"tg://user?id={$chatId}\"><b>" . htmlspecialchars($customerName) . "</b></a>";
+        // Format Contact Info with 1-Tap Clickable Telegram Links & Direct Contact Action
+        $cleanCustName = $customerName;
+        if (preg_match('/^(.*?)\s*(\(@[a-zA-Z0-9_]+\))$/', $customerName, $matches)) {
+            $cleanCustName = trim($matches[1]);
+        }
+        $userLink = "<a href=\"tg://user?id={$chatId}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
         if (!empty($username)) {
             $cleanUsername = ltrim(trim($username), '@');
             $contactDisplay = "{$userLink} (<a href=\"https://t.me/" . htmlspecialchars($cleanUsername) . "\">@" . htmlspecialchars($cleanUsername) . "</a>)";
+            $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
         } else {
             $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
+            $contactUrl = "tg://user?id={$chatId}";
         }
 
         // Single Combined Ticket Message Header (Optimized for Telegram Mobile)
@@ -401,6 +407,15 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                       . "────────────────────\n"
                       . "💡 <i>Reply to this message in group to respond.</i>";
 
+        $ticketBtn = [
+            'inline_keyboard' => [
+                [
+                    ['text' => '💬 Contact Customer', 'url' => $contactUrl],
+                    ['text' => '✋ Claim Ticket', 'callback_data' => 'claim_' . $convId]
+                ]
+            ]
+        ];
+
         // Post ONE combined ticket message into each Telegram Support Group (or Admin fallback)
         foreach ($groups as $g) {
             $gId = (string)$g['group_chat_id'];
@@ -408,11 +423,11 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             $apiRes = null;
 
             if ($photoFileId) {
-                $apiRes = sendPhoto($gId, $photoFileId, $ticketHeader);
+                $apiRes = sendPhoto($gId, $photoFileId, $ticketHeader, $ticketBtn);
             } elseif ($docFileId) {
-                $apiRes = sendDocument($gId, $docFileId, $ticketHeader);
+                $apiRes = sendDocument($gId, $docFileId, $ticketHeader, $ticketBtn);
             } else {
-                $apiRes = sendMessage($gId, $ticketHeader);
+                $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn);
             }
 
             if (!empty($apiRes['ok']) && isset($apiRes['result']['message_id'])) {
@@ -523,12 +538,19 @@ function processSupportBotUpdate($update) {
                     $customerChatId = $convData['customer_chat_id'] ?? '';
                     $username       = trim($convData['username'] ?? '');
 
-                    $userLink = "<a href=\"tg://user?id={$customerChatId}\"><b>" . htmlspecialchars($customerName) . "</b></a>";
+                    $cleanCustName = $customerName;
+                    if (preg_match('/^(.*?)\s*(\(@[a-zA-Z0-9_]+\))$/', $customerName, $matches)) {
+                        $cleanCustName = trim($matches[1]);
+                    }
+                    $userLink = "<a href=\"tg://user?id={$customerChatId}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
+
                     if (!empty($username)) {
                         $cleanUsername = ltrim(trim($username), '@');
                         $contactDisplay = "{$userLink} (<a href=\"https://t.me/" . htmlspecialchars($cleanUsername) . "\">@" . htmlspecialchars($cleanUsername) . "</a>)";
+                        $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
                     } else {
                         $contactDisplay = "{$userLink} (ID: <code>{$customerChatId}</code>)";
+                        $contactUrl = "tg://user?id={$customerChatId}";
                     }
 
                     $rawMsgText = $msg["text"] ?? ($msg["caption"] ?? '');
@@ -550,6 +572,7 @@ function processSupportBotUpdate($update) {
                     $claimedBtn = [
                         'inline_keyboard' => [
                             [
+                                ['text' => '💬 Contact Customer', 'url' => $contactUrl],
                                 ['text' => '✅ Claimed by ' . $agentName, 'callback_data' => 'claimed']
                             ]
                         ]
