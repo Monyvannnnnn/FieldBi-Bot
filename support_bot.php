@@ -532,7 +532,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         }
 
         $messageBody  = !empty($rawTextLines) ? implode("\n", $rawTextLines) : '';
-        $combinedText = !empty($messageBody) ? "💬 <b>Details:</b>\n<blockquote>" . $messageBody . "</blockquote>" : '';
+        $combinedText = !empty($messageBody) ? "💬 Details:\n<blockquote>" . $messageBody . "</blockquote>" : '';
 
         // Create/Update Conversation Ticket ID (Parameterized Query)
         if (isset($driver) && $driver === 'pgsql') {
@@ -574,8 +574,8 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         }
 
         if ($isCvSubmission) {
-            $ticketHeader = "📄 <b>CV SUBMISSION</b> <code>#{$convId}</code>\n"
-                          . "👤 <b>Candidate:</b> {$contactDisplay}\n"
+            $ticketHeader = "📄 CV Submission <code>#{$convId}</code>\n"
+                          . "👤 Candidate: {$contactDisplay}\n"
                           . (!empty($combinedText) ? $combinedText . "\n" : "");
 
             $ticketBtn = [
@@ -586,8 +586,8 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 ]
             ];
         } else {
-            $ticketHeader = "🎫 <b>SUPPORT TICKET</b> <code>#{$convId}</code>\n"
-                          . "👤 <b>From:</b> {$contactDisplay}\n"
+            $ticketHeader = "🎫 Support Ticket <code>#{$convId}</code>\n"
+                          . "👤 From: {$contactDisplay}\n"
                           . (!empty($combinedText) ? $combinedText . "\n" : "");
 
             $ticketBtn = [
@@ -598,6 +598,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 ]
             ];
         }
+
 
 
 
