@@ -816,8 +816,7 @@ function processSupportBotUpdate($update) {
                 $faqKeyboard = [
                     'inline_keyboard' => [
                         [
-                            ['text' => '📋 Job Openings', 'callback_data' => 'faq_jobs'],
-                            ['text' => '💰 Salary Range', 'callback_data' => 'faq_salary']
+                            ['text' => '📋 Job Openings', 'callback_data' => 'faq_jobs']
                         ],
                         [
                             ['text' => '📍 Office Location', 'callback_data' => 'faq_location'],
@@ -831,7 +830,6 @@ function processSupportBotUpdate($update) {
 
             $faqAnswers = [
                 'faq_jobs' => "📋 <b>JOB OPENINGS</b>\n────────────────────\n• <b>Software Engineer</b>\n• <b>Marketing Specialist</b>\n• <b>Sales Representative</b>\n\n📄 <i>Tap /Submit_CV to apply directly!</i>",
-                'faq_salary' => "💰 <b>SALARY & COMPENSATION</b>\n────────────────────\n• <b>Developer:</b> \$800 – \$1,500+\n• <b>Marketing:</b> \$500 – \$1,000\n• <b>Sales:</b> \$400 – \$800 + Commission",
                 'faq_location' => "📍 <b>OFFICE LOCATION</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\nPhnom Penh, Cambodia\n\n📍 <i>Contact our support team for full office directions.</i>",
                 'faq_hours' => "⏰ <b>WORKING HOURS</b>\n────────────────────\n• <b>Monday – Friday:</b> 8:00 AM – 5:00 PM (ICT)\n• <b>Saturday:</b> 8:00 AM – 12:00 PM\n• <b>Sunday:</b> Closed"
             ];
@@ -1200,8 +1198,7 @@ function processSupportBotUpdate($update) {
             $faqKeyboard = [
                 'inline_keyboard' => [
                     [
-                        ['text' => '📋 Job Openings', 'callback_data' => 'faq_jobs'],
-                        ['text' => '💰 Salary Range', 'callback_data' => 'faq_salary']
+                        ['text' => '📋 Job Openings', 'callback_data' => 'faq_jobs']
                     ],
                     [
                         ['text' => '📍 Office Location', 'callback_data' => 'faq_location'],
