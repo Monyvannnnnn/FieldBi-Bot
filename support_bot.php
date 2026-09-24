@@ -126,6 +126,32 @@ function sendMessage($chatId, $text, $replyMarkup = null, $disableWebPagePreview
 }
 
 /**
+ * Send chat action (e.g. 'typing', 'upload_photo', 'upload_document') to Telegram chat
+ */
+function sendChatAction($chatId, $action = 'typing') {
+    if (!isValidChatId($chatId)) return null;
+    $url = "https://api.telegram.org/bot" . BOT_TOKEN . "/sendChatAction";
+    $postFields = [
+        'chat_id' => $chatId,
+        'action'  => $action
+    ];
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($postFields),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    return json_decode($response, true);
+}
+
+
+/**
  * Get user profile photo file_id from Telegram
  */
 function getUserProfilePhotoFileId($userId) {
@@ -797,6 +823,8 @@ function processSupportBotUpdate($update) {
             answerCallbackQuery($cbId, "📄 Option selected: Submit CV");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
             setUserMode($userChatId, 'submit_cv');
+            sendChatAction($userChatId, 'typing');
+            sleep(1);
             sendMessage($userChatId, "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>");
             return;
         }
@@ -805,9 +833,12 @@ function processSupportBotUpdate($update) {
             answerCallbackQuery($cbId, "💬 Option selected: Ask Question");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
             setUserMode($userChatId, 'ask_question');
+            sendChatAction($userChatId, 'typing');
+            sleep(1);
             sendMessage($userChatId, "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!");
             return;
         }
+
 
 
         if (strpos($cbData, 'claimed') === 0) {
@@ -1140,12 +1171,16 @@ function processSupportBotUpdate($update) {
                 ]
             ];
 
+            sendChatAction($chatId, 'typing');
+            sleep(1);
             sendMessage($chatId, $welcomeText, $welcomeKeyboard);
             return;
         }
 
         if (preg_match('/^\/(submit_cv|submitcv|cv)(?:@\w+)?/i', $text)) {
             setUserMode($chatId, 'submit_cv');
+            sendChatAction($chatId, 'typing');
+            sleep(1);
             $msgText = "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>";
             sendMessage($chatId, $msgText);
             return;
@@ -1153,6 +1188,8 @@ function processSupportBotUpdate($update) {
 
         if (preg_match('/^\/(ask_question|askquestion|ask)(?:@\w+)?/i', $text)) {
             setUserMode($chatId, 'ask_question');
+            sendChatAction($chatId, 'typing');
+            sleep(1);
             $msgText = "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!";
             sendMessage($chatId, $msgText);
             return;
@@ -1170,6 +1207,7 @@ function processSupportBotUpdate($update) {
                 $resP = mysqli_query($conn, "SELECT COUNT(*) as c FROM pending_customer_messages WHERE processed = 0");
                 $pCount = (int)mysqli_fetch_assoc($resP)['c'];
             }
+            sendChatAction($chatId, 'typing');
             sendMessage($chatId, "📊 <b>BOT SYSTEM STATUS</b>\n────────────────────\n🟢 <b>Active Support Groups:</b> <code>{$gCount}</code>\n⏳ <b>Pending Messages:</b> <code>{$pCount}</code>");
             return;
         }
@@ -1189,6 +1227,8 @@ function processSupportBotUpdate($update) {
 
             if ($currentMode === 'submit_cv') {
                 if (!isValidCvSubmission($message)) {
+                    sendChatAction($chatId, 'typing');
+                    sleep(1);
                     sendMessage($chatId, "⚠️ <b>Invalid CV Format!</b>\n────────────────────\nPlease upload your CV as a valid document (<b>PDF, DOC, DOCX</b>) or image (<b>PNG, JPG</b>).\n\n<i>If you wish to ask a general question instead, tap /Ask_Question.</i>");
                     return;
                 }
@@ -1244,11 +1284,15 @@ function processSupportBotUpdate($update) {
             }
 
             if ($isCvMessage) {
+                sendChatAction($chatId, 'typing');
+                sleep(1);
                 sendMessage($chatId, "✅ <b>CV Received & Submitted!</b>\n────────────────────\nThank you, <b>" . htmlspecialchars($customerName) . "</b>! 📄\n\nOur HR & Recruitment team has received your application and CV details. We will review your profile and reach out to you shortly.\n\n💬 <i>If you need to send additional documents or updates, feel free to send them here anytime.</i>");
             } else {
 
                 // Send auto-acknowledgment ONLY once per 15-minute conversation window
                 if (!$recentlyContacted) {
+                    sendChatAction($chatId, 'typing');
+                    sleep(1);
                     if (isBusinessOpen()) {
                         sendMessage($chatId, "👋 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.");
                     } else {
@@ -1258,6 +1302,7 @@ function processSupportBotUpdate($update) {
             }
             return;
         }
+
 
     }
 }
