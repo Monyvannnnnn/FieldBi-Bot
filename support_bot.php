@@ -126,32 +126,6 @@ function sendMessage($chatId, $text, $replyMarkup = null, $disableWebPagePreview
 }
 
 /**
- * Send chat action (e.g. 'typing', 'upload_photo', 'upload_document') to Telegram chat
- */
-function sendChatAction($chatId, $action = 'typing') {
-    if (!isValidChatId($chatId)) return null;
-    $url = "https://api.telegram.org/bot" . BOT_TOKEN . "/sendChatAction";
-    $postFields = [
-        'chat_id' => $chatId,
-        'action'  => $action
-    ];
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL => $url,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => http_build_query($postFields),
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_SSL_VERIFYHOST => 2,
-        CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
-    ]);
-    $response = curl_exec($ch);
-    curl_close($ch);
-    return json_decode($response, true);
-}
-
-
-/**
  * Get user profile photo file_id from Telegram
  */
 function getUserProfilePhotoFileId($userId) {
@@ -533,31 +507,6 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             continue;
         }
 
-        // Atomically claim these pending message IDs before sending to Telegram to prevent race conditions & duplicate tickets
-        $pendingIds = array_map('intval', array_column($pendingMsgs, 'id'));
-        if (empty($pendingIds)) {
-            continue;
-        }
-
-        $claimedCount = 0;
-        $idPlaceholders = implode(',', array_fill(0, count($pendingIds), '?'));
-        if (isset($driver) && $driver === 'pgsql') {
-            $claimStmt = $pdo->prepare("UPDATE pending_customer_messages SET processed = 1 WHERE processed = 0 AND id IN ({$idPlaceholders})");
-            $claimStmt->execute($pendingIds);
-            $claimedCount = $claimStmt->rowCount();
-        } else {
-            $types = str_repeat('i', count($pendingIds));
-            $claimStmt = mysqli_prepare($conn, "UPDATE pending_customer_messages SET processed = 1 WHERE processed = 0 AND id IN ({$idPlaceholders})");
-            mysqli_stmt_bind_param($claimStmt, $types, ...$pendingIds);
-            mysqli_stmt_execute($claimStmt);
-            $claimedCount = mysqli_stmt_affected_rows($claimStmt);
-        }
-
-        if ($claimedCount <= 0) {
-            // Another process / thread already claimed and processed these messages!
-            continue;
-        }
-
         // Combine text lines and find photo/doc
         $rawTextLines   = [];
         $photoFileId    = null;
@@ -663,9 +612,24 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             } elseif ($docFileId) {
                 $apiRes = sendDocument($gId, $docFileId, $ticketHeader, $ticketBtn);
             } else {
-                // Send text message with link preview card completely disabled for a clean ticket format
-                $linkPreviewOptions = ['is_disabled' => true];
-                $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn, true, $linkPreviewOptions);
+                // Check if user has profile photo available if no public username
+                if (empty($username)) {
+                    $userProfilePhoto = getUserProfilePhotoFileId($chatId);
+                    if (!empty($userProfilePhoto)) {
+                        $apiRes = sendPhoto($gId, $userProfilePhoto, $ticketHeader, $ticketBtn);
+                    }
+                }
+
+                // Send text message with Telegram profile link preview card enabled
+                if (empty($apiRes)) {
+                    $linkPreviewOptions = !empty($username) ? [
+                        'url'                => $contactUrl,
+                        'prefer_small_media' => true,
+                        'show_above_text'    => false,
+                        'is_disabled'        => false
+                    ] : null;
+                    $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn, false, $linkPreviewOptions);
+                }
             }
 
 
@@ -690,6 +654,16 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                     mysqli_stmt_execute($mapStmt);
                 }
             }
+        }
+
+        // Mark pending messages as processed (Parameterized Query)
+        if (isset($driver) && $driver === 'pgsql') {
+            $markStmt = $pdo->prepare("UPDATE pending_customer_messages SET processed = 1 WHERE customer_chat_id = ? AND processed = 0");
+            $markStmt->execute([$chatId]);
+        } else {
+            $markStmt = mysqli_prepare($conn, "UPDATE pending_customer_messages SET processed = 1 WHERE customer_chat_id = ? AND processed = 0");
+            mysqli_stmt_bind_param($markStmt, "s", $chatId);
+            mysqli_stmt_execute($markStmt);
         }
     }
 }
@@ -823,8 +797,6 @@ function processSupportBotUpdate($update) {
             answerCallbackQuery($cbId, "📄 Option selected: Submit CV");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
             setUserMode($userChatId, 'submit_cv');
-            sendChatAction($userChatId, 'typing');
-            sleep(1);
             sendMessage($userChatId, "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>");
             return;
         }
@@ -833,12 +805,43 @@ function processSupportBotUpdate($update) {
             answerCallbackQuery($cbId, "💬 Option selected: Ask Question");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
             setUserMode($userChatId, 'ask_question');
-            sendChatAction($userChatId, 'typing');
-            sleep(1);
             sendMessage($userChatId, "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!");
             return;
         }
 
+        if (strpos($cbData, 'faq_') === 0 || $cbData === 'menu_faq') {
+            $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            if ($cbData === 'menu_faq') {
+                answerCallbackQuery($cbId, "❓ Frequently Asked Questions");
+                $faqKeyboard = [
+                    'inline_keyboard' => [
+                        [
+                            ['text' => '📋 Job Openings', 'callback_data' => 'faq_jobs'],
+                            ['text' => '💰 Salary Range', 'callback_data' => 'faq_salary']
+                        ],
+                        [
+                            ['text' => '📍 Office Location', 'callback_data' => 'faq_location'],
+                            ['text' => '⏰ Working Hours', 'callback_data' => 'faq_hours']
+                        ]
+                    ]
+                ];
+                sendMessage($userChatId, "❓ <b>FREQUENTLY ASKED QUESTIONS</b>\n────────────────────\nPlease select a topic below to get instant answers:", $faqKeyboard);
+                return;
+            }
+
+            $faqAnswers = [
+                'faq_jobs' => "📋 <b>JOB OPENINGS</b>\n────────────────────\n• <b>Software Engineer</b>\n• <b>Marketing Specialist</b>\n• <b>Sales Representative</b>\n\n📄 <i>Tap /Submit_CV to apply directly!</i>",
+                'faq_salary' => "💰 <b>SALARY & COMPENSATION</b>\n────────────────────\n• <b>Developer:</b> \$800 – \$1,500+\n• <b>Marketing:</b> \$500 – \$1,000\n• <b>Sales:</b> \$400 – \$800 + Commission",
+                'faq_location' => "📍 <b>OFFICE LOCATION</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\nPhnom Penh, Cambodia\n\n📍 <i>Contact our support team for full office directions.</i>",
+                'faq_hours' => "⏰ <b>WORKING HOURS</b>\n────────────────────\n• <b>Monday – Friday:</b> 8:00 AM – 5:00 PM (ICT)\n• <b>Saturday:</b> 8:00 AM – 12:00 PM\n• <b>Sunday:</b> Closed"
+            ];
+
+            if (isset($faqAnswers[$cbData])) {
+                answerCallbackQuery($cbId, "Answer loaded");
+                sendMessage($userChatId, $faqAnswers[$cbData]);
+            }
+            return;
+        }
 
 
         if (strpos($cbData, 'claimed') === 0) {
@@ -1160,27 +1163,27 @@ function processSupportBotUpdate($update) {
                          . "Fieldbi is a technology & software solutions company.\n\n"
                          . "Please select an option below or type your message:\n"
                          . "📄 /Submit_CV — Submit your CV / Resume\n"
-                         . "💬 /Ask_Question — Ask a Question or Inquiry";
+                         . "💬 /Ask_Question — Ask a Question or Inquiry\n"
+                         . "❓ /FAQ — Frequently Asked Questions";
 
             $welcomeKeyboard = [
                 'inline_keyboard' => [
                     [
                         ['text' => '📄 Submit CV', 'callback_data' => 'menu_submit_cv'],
                         ['text' => '💬 Ask Question', 'callback_data' => 'menu_ask_question']
+                    ],
+                    [
+                        ['text' => '❓ FAQ / Quick Answers', 'callback_data' => 'menu_faq']
                     ]
                 ]
             ];
 
-            sendChatAction($chatId, 'typing');
-            sleep(1);
             sendMessage($chatId, $welcomeText, $welcomeKeyboard);
             return;
         }
 
         if (preg_match('/^\/(submit_cv|submitcv|cv)(?:@\w+)?/i', $text)) {
             setUserMode($chatId, 'submit_cv');
-            sendChatAction($chatId, 'typing');
-            sleep(1);
             $msgText = "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>";
             sendMessage($chatId, $msgText);
             return;
@@ -1188,10 +1191,26 @@ function processSupportBotUpdate($update) {
 
         if (preg_match('/^\/(ask_question|askquestion|ask)(?:@\w+)?/i', $text)) {
             setUserMode($chatId, 'ask_question');
-            sendChatAction($chatId, 'typing');
-            sleep(1);
             $msgText = "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!";
             sendMessage($chatId, $msgText);
+            return;
+        }
+
+        if (preg_match('/^\/(faq|help)(?:@\w+)?/i', $text)) {
+            $faqKeyboard = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '📋 Job Openings', 'callback_data' => 'faq_jobs'],
+                        ['text' => '💰 Salary Range', 'callback_data' => 'faq_salary']
+                    ],
+                    [
+                        ['text' => '📍 Office Location', 'callback_data' => 'faq_location'],
+                        ['text' => '⏰ Working Hours', 'callback_data' => 'faq_hours']
+                    ]
+                ]
+            ];
+            $faqMsg = "❓ <b>FREQUENTLY ASKED QUESTIONS</b>\n────────────────────\nPlease select a topic below to get instant answers:";
+            sendMessage($chatId, $faqMsg, $faqKeyboard);
             return;
         }
 
@@ -1207,7 +1226,6 @@ function processSupportBotUpdate($update) {
                 $resP = mysqli_query($conn, "SELECT COUNT(*) as c FROM pending_customer_messages WHERE processed = 0");
                 $pCount = (int)mysqli_fetch_assoc($resP)['c'];
             }
-            sendChatAction($chatId, 'typing');
             sendMessage($chatId, "📊 <b>BOT SYSTEM STATUS</b>\n────────────────────\n🟢 <b>Active Support Groups:</b> <code>{$gCount}</code>\n⏳ <b>Pending Messages:</b> <code>{$pCount}</code>");
             return;
         }
@@ -1227,8 +1245,6 @@ function processSupportBotUpdate($update) {
 
             if ($currentMode === 'submit_cv') {
                 if (!isValidCvSubmission($message)) {
-                    sendChatAction($chatId, 'typing');
-                    sleep(1);
                     sendMessage($chatId, "⚠️ <b>Invalid CV Format!</b>\n────────────────────\nPlease upload your CV as a valid document (<b>PDF, DOC, DOCX</b>) or image (<b>PNG, JPG</b>).\n\n<i>If you wish to ask a general question instead, tap /Ask_Question.</i>");
                     return;
                 }
@@ -1284,15 +1300,11 @@ function processSupportBotUpdate($update) {
             }
 
             if ($isCvMessage) {
-                sendChatAction($chatId, 'typing');
-                sleep(1);
                 sendMessage($chatId, "✅ <b>CV Received & Submitted!</b>\n────────────────────\nThank you, <b>" . htmlspecialchars($customerName) . "</b>! 📄\n\nOur HR & Recruitment team has received your application and CV details. We will review your profile and reach out to you shortly.\n\n💬 <i>If you need to send additional documents or updates, feel free to send them here anytime.</i>");
             } else {
 
                 // Send auto-acknowledgment ONLY once per 15-minute conversation window
                 if (!$recentlyContacted) {
-                    sendChatAction($chatId, 'typing');
-                    sleep(1);
                     if (isBusinessOpen()) {
                         sendMessage($chatId, "👋 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.");
                     } else {
@@ -1302,7 +1314,6 @@ function processSupportBotUpdate($update) {
             }
             return;
         }
-
 
     }
 }
