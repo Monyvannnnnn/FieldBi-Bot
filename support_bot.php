@@ -565,19 +565,14 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         if (!empty($username)) {
             $cleanUsername = ltrim(trim($username), '@');
             $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
-            $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
-            $contactDisplay = "{$userLink} (<code>@{$cleanUsername}</code>)";
+            $ticketHeader = (!empty($combinedText) ? $combinedText . "\n" : "") . "<a href=\"{$contactUrl}\">{$contactUrl}</a>";
         } else {
             $contactUrl = "tg://user?id={$chatId}";
             $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
-            $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
+            $ticketHeader = "👤 From: {$userLink} (ID: <code>{$chatId}</code>)" . (!empty($combinedText) ? "\n" . $combinedText : "");
         }
 
         if ($isCvSubmission) {
-            $ticketHeader = "📄 CV Submission <code>#{$convId}</code>\n"
-                          . "👤 Candidate: {$contactDisplay}\n"
-                          . (!empty($combinedText) ? $combinedText . "\n" : "");
-
             $ticketBtn = [
                 'inline_keyboard' => [
                     [
@@ -586,10 +581,6 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 ]
             ];
         } else {
-            $ticketHeader = "🎫 Support Ticket <code>#{$convId}</code>\n"
-                          . "👤 From: {$contactDisplay}\n"
-                          . (!empty($combinedText) ? $combinedText . "\n" : "");
-
             $ticketBtn = [
                 'inline_keyboard' => [
                     [
@@ -598,6 +589,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 ]
             ];
         }
+
 
 
 
