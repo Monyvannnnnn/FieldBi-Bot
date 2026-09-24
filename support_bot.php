@@ -94,7 +94,7 @@ function isBusinessOpen() {
 /**
  * Send text message to Telegram chat
  */
-function sendMessage($chatId, $text, $replyMarkup = null, $disableWebPagePreview = false) {
+function sendMessage($chatId, $text, $replyMarkup = null, $disableWebPagePreview = false, $linkPreviewOptions = null) {
     if (!isValidChatId($chatId)) return null;
     $url = "https://api.telegram.org/bot" . BOT_TOKEN . "/sendMessage";
     $postFields = [
@@ -103,6 +103,9 @@ function sendMessage($chatId, $text, $replyMarkup = null, $disableWebPagePreview
         'parse_mode'               => 'HTML',
         'disable_web_page_preview' => $disableWebPagePreview ? 'true' : 'false'
     ];
+    if ($linkPreviewOptions !== null) {
+        $postFields['link_preview_options'] = is_array($linkPreviewOptions) ? json_encode($linkPreviewOptions) : $linkPreviewOptions;
+    }
     if ($replyMarkup !== null) {
         $postFields['reply_markup'] = is_array($replyMarkup) ? json_encode($replyMarkup) : $replyMarkup;
     }
@@ -121,6 +124,32 @@ function sendMessage($chatId, $text, $replyMarkup = null, $disableWebPagePreview
     curl_close($ch);
     return json_decode($response, true);
 }
+
+/**
+ * Get user profile photo file_id from Telegram
+ */
+function getUserProfilePhotoFileId($userId) {
+    if (!isValidChatId($userId)) return null;
+    $url = "https://api.telegram.org/bot" . BOT_TOKEN . "/getUserProfilePhotos?user_id=" . urlencode($userId) . "&limit=1";
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    $data = json_decode($response, true);
+    if (!empty($data['ok']) && !empty($data['result']['photos'][0])) {
+        $photos = $data['result']['photos'][0];
+        $largest = end($photos);
+        return $largest['file_id'] ?? null;
+    }
+    return null;
+}
+
 
 /**
  * Send photo to Telegram chat
@@ -429,8 +458,26 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             } elseif ($docFileId) {
                 $apiRes = sendDocument($gId, $docFileId, $ticketHeader, $ticketBtn);
             } else {
-                $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn, true);
+                // Check if user has profile photo available if no public username
+                if (empty($username)) {
+                    $userProfilePhoto = getUserProfilePhotoFileId($chatId);
+                    if (!empty($userProfilePhoto)) {
+                        $apiRes = sendPhoto($gId, $userProfilePhoto, $ticketHeader, $ticketBtn);
+                    }
+                }
+
+                // Send text message with Telegram profile link preview card enabled
+                if (empty($apiRes)) {
+                    $linkPreviewOptions = !empty($username) ? [
+                        'url'                => $contactUrl,
+                        'prefer_small_media' => true,
+                        'show_above_text'    => false,
+                        'is_disabled'        => false
+                    ] : null;
+                    $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn, false, $linkPreviewOptions);
+                }
             }
+
 
             if (!empty($apiRes['ok']) && isset($apiRes['result']['message_id'])) {
                 $groupMessageId = $apiRes['result']['message_id'];
