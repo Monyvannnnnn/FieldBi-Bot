@@ -573,10 +573,19 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
         }
 
+        $formattedDate = date('d M Y | h:i A');
+
         if ($isCvSubmission) {
-            $ticketHeader = "📄 <b>CV SUBMISSION</b> <code>#{$convId}</code>\n"
+            $ticketHeader = "━━━━━━━━━━━━━━━━━━━━\n"
+                          . "📄 <b>CV SUBMISSION #{$convId}</b>\n"
+                          . "━━━━━━━━━━━━━━━━━━━━\n"
                           . "👤 <b>Candidate:</b> {$contactDisplay}\n"
-                          . (!empty($combinedText) ? $combinedText . "\n" : "");
+                          . (!empty($combinedText) ? $combinedText . "\n" : "")
+                          . "━━━━━━━━━━━━━━━━━━━━\n"
+                          . "📅 <b>Date:</b> {$formattedDate}\n"
+                          . "⏳ <b>Status:</b> <b>PENDING</b>\n"
+                          . "━━━━━━━━━━━━━━━━━━━━\n"
+                          . "💡 <i>Reply to this message to respond to candidate.</i>";
 
             $ticketBtn = [
                 'inline_keyboard' => [
@@ -586,9 +595,16 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 ]
             ];
         } else {
-            $ticketHeader = "🎫 <b>SUPPORT TICKET</b> <code>#{$convId}</code>\n"
+            $ticketHeader = "━━━━━━━━━━━━━━━━━━━━\n"
+                          . "🎫 <b>SUPPORT TICKET #{$convId}</b>\n"
+                          . "━━━━━━━━━━━━━━━━━━━━\n"
                           . "👤 <b>From:</b> {$contactDisplay}\n"
-                          . (!empty($combinedText) ? $combinedText . "\n" : "");
+                          . (!empty($combinedText) ? $combinedText . "\n" : "")
+                          . "━━━━━━━━━━━━━━━━━━━━\n"
+                          . "📅 <b>Date:</b> {$formattedDate}\n"
+                          . "⏳ <b>Status:</b> <b>PENDING</b>\n"
+                          . "━━━━━━━━━━━━━━━━━━━━\n"
+                          . "💡 <i>Reply to this message to respond.</i>";
 
             $ticketBtn = [
                 'inline_keyboard' => [
@@ -765,10 +781,17 @@ function processSupportBotUpdate($update) {
                         $messageContent = trim($matches[2]);
                     }
 
-                    $claimedBody = "🎫 <b>SUPPORT TICKET</b> <code>#{$convId}</code>\n"
-                                 . "📌 <b>Status:</b> <b>Claimed</b> by <i>" . htmlspecialchars($agentName) . "</i>\n"
+                    $claimedDate = date('d M Y | h:i A');
+                    $claimedBody = "━━━━━━━━━━━━━━━━━━━━\n"
+                                 . "🎫 <b>SUPPORT TICKET #{$convId}</b>\n"
+                                 . "━━━━━━━━━━━━━━━━━━━━\n"
                                  . "👤 <b>From:</b> {$contactDisplay}\n"
-                                 . (!empty($messageContent) ? "💬 <b>Details:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "");
+                                 . (!empty($messageContent) ? "💬 <b>Details:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "")
+                                 . "━━━━━━━━━━━━━━━━━━━━\n"
+                                 . "📅 <b>Date:</b> {$claimedDate}\n"
+                                 . "✅ <b>Status:</b> <b>CLAIMED</b> by <i>" . htmlspecialchars($agentName) . "</i>\n"
+                                 . "━━━━━━━━━━━━━━━━━━━━\n"
+                                 . "💬 <i>Agent " . htmlspecialchars($agentName) . " is handling this ticket.</i>";
 
 
 
