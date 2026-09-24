@@ -264,40 +264,28 @@ function isValidCvSubmission($message) {
     // 1. Check Document attachment
     if (!empty($document)) {
         $fileName = strtolower($document["file_name"] ?? '');
-        $mimeType = strtolower($document["mime_type"] ?? '');
-        $allowedExtensions = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'webp', 'pages', 'rtf', 'txt'];
         $ext = pathinfo($fileName, PATHINFO_EXTENSION);
+        $blockedExtensions = ['exe', 'bat', 'cmd', 'sh', 'apk', 'jar', 'vbs', 'scr', 'dll'];
 
-        if (!empty($ext) && in_array($ext, $allowedExtensions)) {
-            return true;
+        if (!empty($ext) && in_array($ext, $blockedExtensions)) {
+            return false;
         }
-        if (strpos($mimeType, 'pdf') !== false ||
-            strpos($mimeType, 'msword') !== false ||
-            strpos($mimeType, 'wordprocessingml') !== false ||
-            strpos($mimeType, 'image/') !== false ||
-            strpos($mimeType, 'text/') !== false) {
-            return true;
-        }
-        return false;
+        return true;
     }
 
-    // 2. Check Photo attachment (image scan of CV)
+    // 2. Check Photo attachment
     if (!empty($photo)) {
         return true;
     }
 
-    // 3. Check Text content for CV links or resume details
+    // 3. Check Text or Link content
     if (!empty($text)) {
-        if (preg_match('/https?:\/\/(www\.)?(drive\.google\.com|docs\.google\.com|dropbox\.com|linkedin\.com|github\.com|[^\s]+\.(pdf|doc|docx))/i', $text)) {
-            return true;
-        }
-        if (strlen($text) >= 15 && (preg_match('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/', $text) || preg_match('/(cv|resume|experience|skills|education|applicant|apply)/i', $text))) {
-            return true;
-        }
+        return true;
     }
 
     return false;
 }
+
 
 
 
@@ -1257,8 +1245,9 @@ function processSupportBotUpdate($update) {
             }
 
             if ($isCvMessage) {
-                sendMessage($chatId, "✅ <b>CV Submitted Successfully!</b>\n────────────────────\nThank you, <b>" . htmlspecialchars($customerName) . "</b>! Our HR team has received your CV and will review your application shortly.");
+                sendMessage($chatId, "✅ <b>CV Received & Submitted!</b>\n────────────────────\nThank you, <b>" . htmlspecialchars($customerName) . "</b>! 📄\n\nOur HR & Recruitment team has received your application and CV details. We will review your profile and reach out to you shortly.\n\n💬 <i>If you need to send additional documents or updates, feel free to send them here anytime.</i>");
             } else {
+
                 // Send auto-acknowledgment ONLY once per 15-minute conversation window
                 if (!$recentlyContacted) {
                     if (isBusinessOpen()) {
