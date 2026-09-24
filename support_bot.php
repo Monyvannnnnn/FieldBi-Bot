@@ -565,17 +565,16 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         if (!empty($username)) {
             $cleanUsername = ltrim(trim($username), '@');
             $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
-            $userLink = "<a href=\"{$contactUrl}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
-            $contactDisplay = "{$userLink} (<a href=\"{$contactUrl}\">@" . htmlspecialchars($cleanUsername) . "</a>)";
+            $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
+            $contactDisplay = "{$userLink} (<code>@{$cleanUsername}</code>)";
         } else {
             $contactUrl = "tg://user?id={$chatId}";
-            $userLink = "<a href=\"{$contactUrl}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
+            $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
             $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
         }
 
         if ($isCvSubmission) {
-            $ticketHeader = "📄 <b>NEW CV SUBMISSION</b> <code>#{$convId}</code>\n"
-                          . "─────────────────\n"
+            $ticketHeader = "📄 <b>CV SUBMISSION</b> <code>#{$convId}</code>\n"
                           . "👤 <b>Candidate:</b> {$contactDisplay}\n"
                           . (!empty($combinedText) ? $combinedText . "\n" : "");
 
@@ -587,8 +586,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 ]
             ];
         } else {
-            $ticketHeader = "🎫 <b>NEW CUSTOMER</b> <code>#{$convId}</code>\n"
-                          . "─────────────────\n"
+            $ticketHeader = "🎫 <b>SUPPORT TICKET</b> <code>#{$convId}</code>\n"
                           . "👤 <b>From:</b> {$contactDisplay}\n"
                           . (!empty($combinedText) ? $combinedText . "\n" : "");
 
@@ -600,6 +598,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 ]
             ];
         }
+
 
 
         // Post ONE combined ticket message into each Telegram Support Group (or Admin fallback)
@@ -750,27 +749,27 @@ function processSupportBotUpdate($update) {
                     if (!empty($username)) {
                         $cleanUsername = ltrim(trim($username), '@');
                         $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
-                        $userLink = "<a href=\"{$contactUrl}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
-                        $contactDisplay = "{$userLink} (<a href=\"{$contactUrl}\">@" . htmlspecialchars($cleanUsername) . "</a>)";
+                        $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
+                        $contactDisplay = "{$userLink} (<code>@{$cleanUsername}</code>)";
                     } else {
                         $contactUrl = "tg://user?id={$customerChatId}";
-                        $userLink = "<a href=\"{$contactUrl}\"><b>" . htmlspecialchars($cleanCustName) . "</b></a>";
+                        $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
                         $contactDisplay = "{$userLink} (ID: <code>{$customerChatId}</code>)";
                     }
 
                     $rawMsgText = $msg["text"] ?? ($msg["caption"] ?? '');
                     $messageContent = '';
-                    if (preg_match('/💬 <b>Message:<\/b>\s*\n(?:<blockquote>|<i>[“"«]?)?(.*?)(?:<\/blockquote>|[”"»]?<\/i>)?(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
-                        $messageContent = trim($matches[1]);
-                    } elseif (preg_match('/Message:\s*\n(.*?)(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
-                        $messageContent = trim($matches[1]);
+                    if (preg_match('/💬 <b>(Message|Details):<\/b>\s*\n(?:<blockquote>|<i>[“"«]?)?(.*?)(?:<\/blockquote>|[”"»]?<\/i>)?(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
+                        $messageContent = trim($matches[2]);
+                    } elseif (preg_match('/(Message|Details):\s*\n(.*?)(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
+                        $messageContent = trim($matches[2]);
                     }
 
                     $claimedBody = "🎫 <b>SUPPORT TICKET</b> <code>#{$convId}</code>\n"
-                                 . "📌 <b>Status:</b> <b>Claimed</b> by <b>" . htmlspecialchars($agentName) . "</b>\n"
-                                 . "────────────────────\n"
+                                 . "📌 <b>Status:</b> <b>Claimed</b> by <i>" . htmlspecialchars($agentName) . "</i>\n"
                                  . "👤 <b>From:</b> {$contactDisplay}\n"
-                                 . (!empty($messageContent) ? "💬 <b>Message:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "");
+                                 . (!empty($messageContent) ? "💬 <b>Details:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "");
+
 
 
                     $claimedBtn = [
