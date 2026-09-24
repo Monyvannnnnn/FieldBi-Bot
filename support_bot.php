@@ -638,12 +638,27 @@ function processSupportBotUpdate($update) {
             return;
         }
 
+        if ($cbData === 'menu_submit_cv') {
+            answerCallbackQuery($cbId, "📄 Option selected: Submit CV");
+            $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            sendMessage($userChatId, "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease send or upload your CV (PDF, DOCX, or Image file) here in chat.\n\nOur team will review your application and contact you shortly!");
+            return;
+        }
+
+        if ($cbData === 'menu_ask_question') {
+            answerCallbackQuery($cbId, "💬 Option selected: Ask Question");
+            $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            sendMessage($userChatId, "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!");
+            return;
+        }
+
         if (strpos($cbData, 'claimed') === 0) {
             answerCallbackQuery($cbId, "ℹ️ This ticket has already been claimed.", false);
             return;
         }
         return;
     }
+
     
     if (!isset($update["message"])) {
         return;
@@ -951,9 +966,38 @@ function processSupportBotUpdate($update) {
                 mysqli_stmt_execute($bufStmt);
             }
 
-            sendMessage($chatId, "👋 <b>Welcome to Fieldbi Support!</b>\n────────────────────\nFieldbi is a technology & software solutions company.\n\n💬 Please send your message, question, or inquiry below, and our support team will assist you shortly.");
+            $welcomeText = "👋 <b>Welcome to Fieldbi Support!</b>\n"
+                         . "────────────────────\n"
+                         . "Fieldbi is a technology & software solutions company.\n\n"
+                         . "Please select an option below or type your message:\n"
+                         . "📄 /Submit_CV — Submit your CV / Resume\n"
+                         . "💬 /Ask_Question — Ask a Question or Inquiry";
+
+            $welcomeKeyboard = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '📄 Submit CV', 'callback_data' => 'menu_submit_cv'],
+                        ['text' => '💬 Ask Question', 'callback_data' => 'menu_ask_question']
+                    ]
+                ]
+            ];
+
+            sendMessage($chatId, $welcomeText, $welcomeKeyboard);
             return;
         }
+
+        if (preg_match('/^\/(submit_cv|submitcv|cv)(?:@\w+)?/i', $text)) {
+            $msgText = "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease send or upload your CV (PDF, DOCX, or Image file) here in chat.\n\nOur team will review your application and contact you shortly!";
+            sendMessage($chatId, $msgText);
+            return;
+        }
+
+        if (preg_match('/^\/(ask_question|askquestion|ask)(?:@\w+)?/i', $text)) {
+            $msgText = "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!";
+            sendMessage($chatId, $msgText);
+            return;
+        }
+
 
         if ($text === '/status' && !empty(ADMIN_CHAT_ID) && $senderId === ADMIN_CHAT_ID) {
             $gCount = 0;
