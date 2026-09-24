@@ -565,14 +565,21 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         if (!empty($username)) {
             $cleanUsername = ltrim(trim($username), '@');
             $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
-            $ticketHeader = (!empty($combinedText) ? $combinedText . "\n" : "") . "<a href=\"{$contactUrl}\">{$contactUrl}</a>";
+            $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
+            $contactDisplay = "{$userLink} (<code>@{$cleanUsername}</code>)";
+            $textHeader = (!empty($combinedText) ? $combinedText . "\n" : "") . "<a href=\"{$contactUrl}\">{$contactUrl}</a>";
         } else {
             $contactUrl = "tg://user?id={$chatId}";
             $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
-            $ticketHeader = "👤 From: {$userLink} (ID: <code>{$chatId}</code>)" . (!empty($combinedText) ? "\n" . $combinedText : "");
+            $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
+            $textHeader = "👤 From: {$contactDisplay}" . (!empty($combinedText) ? "\n" . $combinedText : "");
         }
 
         if ($isCvSubmission) {
+            $mediaCaption = "📄 <b>CV Submission</b> <code>#{$convId}</code>\n"
+                          . "👤 Candidate: {$contactDisplay}\n"
+                          . (!empty($combinedText) ? $combinedText : "");
+
             $ticketBtn = [
                 'inline_keyboard' => [
                     [
@@ -581,6 +588,10 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 ]
             ];
         } else {
+            $mediaCaption = "🎫 Support Ticket <code>#{$convId}</code>\n"
+                          . "👤 From: {$contactDisplay}\n"
+                          . (!empty($combinedText) ? $combinedText : "");
+
             $ticketBtn = [
                 'inline_keyboard' => [
                     [
@@ -590,10 +601,6 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             ];
         }
 
-
-
-
-
         // Post ONE combined ticket message into each Telegram Support Group (or Admin fallback)
         foreach ($groups as $g) {
             $gId = (string)$g['group_chat_id'];
@@ -601,15 +608,15 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             $apiRes = null;
 
             if ($photoFileId) {
-                $apiRes = sendPhoto($gId, $photoFileId, $ticketHeader, $ticketBtn);
+                $apiRes = sendPhoto($gId, $photoFileId, $mediaCaption, $ticketBtn);
             } elseif ($docFileId) {
-                $apiRes = sendDocument($gId, $docFileId, $ticketHeader, $ticketBtn);
+                $apiRes = sendDocument($gId, $docFileId, $mediaCaption, $ticketBtn);
             } else {
                 // Check if user has profile photo available if no public username
                 if (empty($username)) {
                     $userProfilePhoto = getUserProfilePhotoFileId($chatId);
                     if (!empty($userProfilePhoto)) {
-                        $apiRes = sendPhoto($gId, $userProfilePhoto, $ticketHeader, $ticketBtn);
+                        $apiRes = sendPhoto($gId, $userProfilePhoto, $mediaCaption, $ticketBtn);
                     }
                 }
 
@@ -621,12 +628,16 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                         'show_above_text'    => false,
                         'is_disabled'        => false
                     ] : null;
-                    $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn, false, $linkPreviewOptions);
+                    $apiRes = sendMessage($gId, $textHeader, $ticketBtn, false, $linkPreviewOptions);
                 }
             }
 
 
-            if (!empty($apiRes['ok']) && isset($apiRes['result']['message_id'])) {
+
+
+
+
+              if (!empty($apiRes['ok']) && isset($apiRes['result']['message_id'])) {
                 $groupMessageId = $apiRes['result']['message_id'];
 
                 // Map Group Message ID -> Customer Chat ID (Parameterized Query)
@@ -648,6 +659,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 }
             }
         }
+
 
         // Mark pending messages as processed (Parameterized Query)
         if (isset($driver) && $driver === 'pgsql') {
