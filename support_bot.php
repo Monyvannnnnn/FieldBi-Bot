@@ -579,26 +579,10 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             $mediaCaption = "📄 <b>CV Submission</b> <code>#{$convId}</code>\n"
                           . "👤 Candidate: {$contactDisplay}\n"
                           . (!empty($combinedText) ? $combinedText : "");
-
-            $ticketBtn = [
-                'inline_keyboard' => [
-                    [
-                        ['text' => '📄 Contact Candidate', 'url' => $contactUrl]
-                    ]
-                ]
-            ];
         } else {
             $mediaCaption = "🎫 Support Ticket <code>#{$convId}</code>\n"
                           . "👤 From: {$contactDisplay}\n"
                           . (!empty($combinedText) ? $combinedText : "");
-
-            $ticketBtn = [
-                'inline_keyboard' => [
-                    [
-                        ['text' => '💬 Contact Customer', 'url' => $contactUrl]
-                    ]
-                ]
-            ];
         }
 
         // Post ONE combined ticket message into each Telegram Support Group (or Admin fallback)
@@ -608,19 +592,27 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             $apiRes = null;
 
             if (!empty($photoFileId)) {
-                $apiRes = sendPhoto($gId, $photoFileId, $mediaCaption, $ticketBtn);
+                $apiRes = sendPhoto($gId, $photoFileId, $mediaCaption, null);
             } elseif (!empty($docFileId)) {
-                $apiRes = sendDocument($gId, $docFileId, $mediaCaption, $ticketBtn);
-            } else {
-                $linkPreviewOptions = !empty($username) ? [
+                $apiRes = sendDocument($gId, $docFileId, $mediaCaption, null);
+            }
+
+            // Always send profile card preview box with SEND MESSAGE link
+            if (!empty($username)) {
+                $linkPreviewOptions = [
                     'url'                => $contactUrl,
                     'prefer_small_media' => true,
                     'show_above_text'    => false,
                     'is_disabled'        => false
-                ] : null;
-
-                $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn, false, $linkPreviewOptions);
+                ];
+                $cardRes = sendMessage($gId, $contactUrl, null, false, $linkPreviewOptions);
+                if (empty($apiRes)) {
+                    $apiRes = $cardRes;
+                }
+            } elseif (empty($apiRes)) {
+                $apiRes = sendMessage($gId, $ticketHeader, null, false, null);
             }
+
 
 
             if (!empty($apiRes['ok']) && isset($apiRes['result']['message_id'])) {
