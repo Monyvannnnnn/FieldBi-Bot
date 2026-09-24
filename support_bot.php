@@ -663,24 +663,9 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             } elseif ($docFileId) {
                 $apiRes = sendDocument($gId, $docFileId, $ticketHeader, $ticketBtn);
             } else {
-                // Check if user has profile photo available if no public username
-                if (empty($username)) {
-                    $userProfilePhoto = getUserProfilePhotoFileId($chatId);
-                    if (!empty($userProfilePhoto)) {
-                        $apiRes = sendPhoto($gId, $userProfilePhoto, $ticketHeader, $ticketBtn);
-                    }
-                }
-
-                // Send text message with Telegram profile link preview card enabled
-                if (empty($apiRes)) {
-                    $linkPreviewOptions = !empty($username) ? [
-                        'url'                => $contactUrl,
-                        'prefer_small_media' => true,
-                        'show_above_text'    => false,
-                        'is_disabled'        => false
-                    ] : null;
-                    $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn, false, $linkPreviewOptions);
-                }
+                // Send text message with link preview card completely disabled for a clean ticket format
+                $linkPreviewOptions = ['is_disabled' => true];
+                $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn, true, $linkPreviewOptions);
             }
 
 
