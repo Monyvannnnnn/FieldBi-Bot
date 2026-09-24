@@ -533,6 +533,31 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             continue;
         }
 
+        // Atomically claim these pending message IDs before sending to Telegram to prevent race conditions & duplicate tickets
+        $pendingIds = array_map('intval', array_column($pendingMsgs, 'id'));
+        if (empty($pendingIds)) {
+            continue;
+        }
+
+        $claimedCount = 0;
+        $idPlaceholders = implode(',', array_fill(0, count($pendingIds), '?'));
+        if (isset($driver) && $driver === 'pgsql') {
+            $claimStmt = $pdo->prepare("UPDATE pending_customer_messages SET processed = 1 WHERE processed = 0 AND id IN ({$idPlaceholders})");
+            $claimStmt->execute($pendingIds);
+            $claimedCount = $claimStmt->rowCount();
+        } else {
+            $types = str_repeat('i', count($pendingIds));
+            $claimStmt = mysqli_prepare($conn, "UPDATE pending_customer_messages SET processed = 1 WHERE processed = 0 AND id IN ({$idPlaceholders})");
+            mysqli_stmt_bind_param($claimStmt, $types, ...$pendingIds);
+            mysqli_stmt_execute($claimStmt);
+            $claimedCount = mysqli_stmt_affected_rows($claimStmt);
+        }
+
+        if ($claimedCount <= 0) {
+            // Another process / thread already claimed and processed these messages!
+            continue;
+        }
+
         // Combine text lines and find photo/doc
         $rawTextLines   = [];
         $photoFileId    = null;
@@ -680,16 +705,6 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                     mysqli_stmt_execute($mapStmt);
                 }
             }
-        }
-
-        // Mark pending messages as processed (Parameterized Query)
-        if (isset($driver) && $driver === 'pgsql') {
-            $markStmt = $pdo->prepare("UPDATE pending_customer_messages SET processed = 1 WHERE customer_chat_id = ? AND processed = 0");
-            $markStmt->execute([$chatId]);
-        } else {
-            $markStmt = mysqli_prepare($conn, "UPDATE pending_customer_messages SET processed = 1 WHERE customer_chat_id = ? AND processed = 0");
-            mysqli_stmt_bind_param($markStmt, "s", $chatId);
-            mysqli_stmt_execute($markStmt);
         }
     }
 }
