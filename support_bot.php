@@ -150,6 +150,156 @@ function getUserProfilePhotoFileId($userId) {
     return null;
 }
 
+/**
+ * Initialize user_states table and is_cv column if not exist
+ */
+function initUserStatesSchema() {
+    global $pdo, $conn, $driver;
+    static $initialized = false;
+    if ($initialized) return;
+    $initialized = true;
+
+    try {
+        if (isset($driver) && $driver === 'pgsql') {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS user_states (
+                    customer_chat_id VARCHAR(50) PRIMARY KEY,
+                    current_mode VARCHAR(50) DEFAULT 'general',
+                    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+                );
+                ALTER TABLE pending_customer_messages ADD COLUMN IF NOT EXISTS is_cv SMALLINT DEFAULT 0;
+            ");
+        } elseif ($conn) {
+            mysqli_query($conn, "
+                CREATE TABLE IF NOT EXISTS user_states (
+                    customer_chat_id VARCHAR(50) PRIMARY KEY,
+                    current_mode VARCHAR(50) DEFAULT 'general',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
+            $check = mysqli_query($conn, "SHOW COLUMNS FROM pending_customer_messages LIKE 'is_cv'");
+            if ($check && mysqli_num_rows($check) === 0) {
+                mysqli_query($conn, "ALTER TABLE pending_customer_messages ADD COLUMN is_cv TINYINT(1) DEFAULT 0");
+            }
+        }
+    } catch (Throwable $e) {}
+}
+
+/**
+ * Set current user workflow mode (e.g., 'submit_cv', 'ask_question', 'general')
+ */
+function setUserMode($chatId, $mode) {
+    global $pdo, $conn, $driver;
+    if (!isValidChatId($chatId)) return;
+    initUserStatesSchema();
+
+    $stateDir = __DIR__ . '/storage/states';
+    if (!is_dir($stateDir)) {
+        @mkdir($stateDir, 0777, true);
+    }
+    @file_put_contents("{$stateDir}/{$chatId}.json", json_encode(['mode' => $mode, 'time' => time()]));
+
+    try {
+        if (isset($driver) && $driver === 'pgsql') {
+            $stmt = $pdo->prepare("
+                INSERT INTO user_states (customer_chat_id, current_mode) VALUES (?, ?)
+                ON CONFLICT (customer_chat_id) DO UPDATE SET current_mode = EXCLUDED.current_mode
+            ");
+            $stmt->execute([$chatId, $mode]);
+        } elseif ($conn) {
+            $stmt = mysqli_prepare($conn, "INSERT INTO user_states (customer_chat_id, current_mode) VALUES (?, ?) ON DUPLICATE KEY UPDATE current_mode = VALUES(current_mode)");
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, "ss", $chatId, $mode);
+                mysqli_stmt_execute($stmt);
+            }
+        }
+    } catch (Throwable $e) {}
+}
+
+/**
+ * Get current user workflow mode
+ */
+function getUserMode($chatId) {
+    global $pdo, $conn, $driver;
+    if (!isValidChatId($chatId)) return 'general';
+    initUserStatesSchema();
+
+    try {
+        if (isset($driver) && $driver === 'pgsql') {
+            $stmt = $pdo->prepare("SELECT current_mode FROM user_states WHERE customer_chat_id = ?");
+            $stmt->execute([$chatId]);
+            $mode = $stmt->fetchColumn();
+            if ($mode) return $mode;
+        } elseif ($conn) {
+            $stmt = mysqli_prepare($conn, "SELECT current_mode FROM user_states WHERE customer_chat_id = ?");
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, "s", $chatId);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                if ($res && $row = mysqli_fetch_assoc($res)) {
+                    return $row['current_mode'] ?? 'general';
+                }
+            }
+        }
+    } catch (Throwable $e) {}
+
+    $stateFile = __DIR__ . "/storage/states/{$chatId}.json";
+    if (file_exists($stateFile)) {
+        $data = json_decode(@file_get_contents($stateFile), true);
+        if (!empty($data['mode']) && (time() - ($data['time'] ?? 0)) < 3600) {
+            return $data['mode'];
+        }
+    }
+    return 'general';
+}
+
+/**
+ * Validate whether a message contains a valid CV (document, photo, or valid resume content)
+ */
+function isValidCvSubmission($message) {
+    $document = $message["document"] ?? null;
+    $photo    = $message["photo"] ?? null;
+    $text     = trim($message["text"] ?? ($message["caption"] ?? ''));
+
+    // 1. Check Document attachment
+    if (!empty($document)) {
+        $fileName = strtolower($document["file_name"] ?? '');
+        $mimeType = strtolower($document["mime_type"] ?? '');
+        $allowedExtensions = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'webp', 'pages', 'rtf', 'txt'];
+        $ext = pathinfo($fileName, PATHINFO_EXTENSION);
+
+        if (!empty($ext) && in_array($ext, $allowedExtensions)) {
+            return true;
+        }
+        if (strpos($mimeType, 'pdf') !== false ||
+            strpos($mimeType, 'msword') !== false ||
+            strpos($mimeType, 'wordprocessingml') !== false ||
+            strpos($mimeType, 'image/') !== false ||
+            strpos($mimeType, 'text/') !== false) {
+            return true;
+        }
+        return false;
+    }
+
+    // 2. Check Photo attachment (image scan of CV)
+    if (!empty($photo)) {
+        return true;
+    }
+
+    // 3. Check Text content for CV links or resume details
+    if (!empty($text)) {
+        if (preg_match('/https?:\/\/(www\.)?(drive\.google\.com|docs\.google\.com|dropbox\.com|linkedin\.com|github\.com|[^\s]+\.(pdf|doc|docx))/i', $text)) {
+            return true;
+        }
+        if (strlen($text) >= 15 && (preg_match('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/', $text) || preg_match('/(cv|resume|experience|skills|education|applicant|apply)/i', $text))) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 
 /**
  * Send photo to Telegram chat
@@ -370,9 +520,10 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         }
 
         // Combine text lines and find photo/doc
-        $rawTextLines = [];
-        $photoFileId  = null;
-        $docFileId    = null;
+        $rawTextLines   = [];
+        $photoFileId    = null;
+        $docFileId      = null;
+        $isCvSubmission = false;
 
         foreach ($pendingMsgs as $m) {
             if (!empty($m['message_text'])) {
@@ -384,13 +535,16 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             if (!empty($m['doc_file_id'])) {
                 $docFileId = $m['doc_file_id'];
             }
+            if (!empty($m['is_cv'])) {
+                $isCvSubmission = true;
+            }
             if (empty($username) && !empty($m['username'])) {
                 $username = trim($m['username']);
             }
         }
 
         $messageBody  = !empty($rawTextLines) ? implode("\n", $rawTextLines) : '';
-        $combinedText = !empty($messageBody) ? "💬 <b>Message:</b>\n<blockquote>" . $messageBody . "</blockquote>" : '';
+        $combinedText = !empty($messageBody) ? "💬 <b>Details:</b>\n<blockquote>" . $messageBody . "</blockquote>" : '';
 
         // Create/Update Conversation Ticket ID (Parameterized Query)
         if (isset($driver) && $driver === 'pgsql') {
@@ -431,20 +585,34 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
         }
 
-        // Single Combined Ticket Message Header (Optimized for Telegram Mobile)
-        $ticketHeader = "🎫 <b>NEW CUSTOMER</b> <code>#{$convId}</code>\n"
-                      . "─────────────────\n"
-                      . "👤 <b>From:</b> {$contactDisplay}\n"
-                      . (!empty($combinedText) ? $combinedText . "\n" : "");
+        if ($isCvSubmission) {
+            $ticketHeader = "📄 <b>NEW CV SUBMISSION</b> <code>#{$convId}</code>\n"
+                          . "─────────────────\n"
+                          . "👤 <b>Candidate:</b> {$contactDisplay}\n"
+                          . (!empty($combinedText) ? $combinedText . "\n" : "");
 
-
-        $ticketBtn = [
-            'inline_keyboard' => [
-                [
-                    ['text' => '💬 Contact Customer', 'url' => $contactUrl]
+            $ticketBtn = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '📄 Contact Candidate', 'url' => $contactUrl]
+                    ]
                 ]
-            ]
-        ];
+            ];
+        } else {
+            $ticketHeader = "🎫 <b>NEW CUSTOMER</b> <code>#{$convId}</code>\n"
+                          . "─────────────────\n"
+                          . "👤 <b>From:</b> {$contactDisplay}\n"
+                          . (!empty($combinedText) ? $combinedText . "\n" : "");
+
+            $ticketBtn = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '💬 Contact Customer', 'url' => $contactUrl]
+                    ]
+                ]
+            ];
+        }
+
 
         // Post ONE combined ticket message into each Telegram Support Group (or Admin fallback)
         foreach ($groups as $g) {
@@ -641,16 +809,19 @@ function processSupportBotUpdate($update) {
         if ($cbData === 'menu_submit_cv') {
             answerCallbackQuery($cbId, "📄 Option selected: Submit CV");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
-            sendMessage($userChatId, "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease send or upload your CV (PDF, DOCX, or Image file) here in chat.\n\nOur team will review your application and contact you shortly!");
+            setUserMode($userChatId, 'submit_cv');
+            sendMessage($userChatId, "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>");
             return;
         }
 
         if ($cbData === 'menu_ask_question') {
             answerCallbackQuery($cbId, "💬 Option selected: Ask Question");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            setUserMode($userChatId, 'ask_question');
             sendMessage($userChatId, "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!");
             return;
         }
+
 
         if (strpos($cbData, 'claimed') === 0) {
             answerCallbackQuery($cbId, "ℹ️ This ticket has already been claimed.", false);
@@ -987,17 +1158,18 @@ function processSupportBotUpdate($update) {
         }
 
         if (preg_match('/^\/(submit_cv|submitcv|cv)(?:@\w+)?/i', $text)) {
-            $msgText = "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease send or upload your CV (PDF, DOCX, or Image file) here in chat.\n\nOur team will review your application and contact you shortly!";
+            setUserMode($chatId, 'submit_cv');
+            $msgText = "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>";
             sendMessage($chatId, $msgText);
             return;
         }
 
         if (preg_match('/^\/(ask_question|askquestion|ask)(?:@\w+)?/i', $text)) {
+            setUserMode($chatId, 'ask_question');
             $msgText = "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!";
             sendMessage($chatId, $msgText);
             return;
         }
-
 
         if ($text === '/status' && !empty(ADMIN_CHAT_ID) && $senderId === ADMIN_CHAT_ID) {
             $gCount = 0;
@@ -1023,6 +1195,20 @@ function processSupportBotUpdate($update) {
             $customerName = trim($firstName . ' ' . $lastName);
             if (empty($customerName)) {
                 $customerName = 'Customer';
+            }
+
+            $currentMode = getUserMode($chatId);
+            $isCvMessage = 0;
+
+            if ($currentMode === 'submit_cv') {
+                if (!isValidCvSubmission($message)) {
+                    sendMessage($chatId, "⚠️ <b>Invalid CV Format!</b>\n────────────────────\nPlease upload your CV as a valid document (<b>PDF, DOC, DOCX</b>) or image (<b>PNG, JPG</b>).\n\n<i>If you wish to ask a general question instead, tap /Ask_Question.</i>");
+                    return;
+                }
+                $isCvMessage = 1;
+                setUserMode($chatId, 'general');
+            } elseif ($currentMode === 'ask_question') {
+                setUserMode($chatId, 'general');
             }
 
             // Check if customer sent any message in the last 15 minutes (Parameterized Query)
@@ -1052,8 +1238,8 @@ function processSupportBotUpdate($update) {
             // Save message into pending buffer table (Parameterized Query)
             if (isset($driver) && $driver === 'pgsql') {
                 $bufStmt = $pdo->prepare("
-                    INSERT INTO pending_customer_messages (customer_chat_id, customer_name, username, message_text, photo_file_id, doc_file_id)
-                    VALUES (:cid, :name, :uname, :msg, :photo, :doc)
+                    INSERT INTO pending_customer_messages (customer_chat_id, customer_name, username, message_text, photo_file_id, doc_file_id, is_cv)
+                    VALUES (:cid, :name, :uname, :msg, :photo, :doc, :iscv)
                 ");
                 $bufStmt->execute([
                     ':cid'   => $chatId,
@@ -1061,24 +1247,30 @@ function processSupportBotUpdate($update) {
                     ':uname' => $username,
                     ':msg'   => $mainContent,
                     ':photo' => $photoFileId,
-                    ':doc'   => $docFileId
+                    ':doc'   => $docFileId,
+                    ':iscv'  => $isCvMessage
                 ]);
             } else {
-                $bufStmt = mysqli_prepare($conn, "INSERT INTO pending_customer_messages (customer_chat_id, customer_name, username, message_text, photo_file_id, doc_file_id) VALUES (?, ?, ?, ?, ?, ?)");
-                mysqli_stmt_bind_param($bufStmt, "ssssss", $chatId, $customerName, $username, $mainContent, $photoFileId, $docFileId);
+                $bufStmt = mysqli_prepare($conn, "INSERT INTO pending_customer_messages (customer_chat_id, customer_name, username, message_text, photo_file_id, doc_file_id, is_cv) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                mysqli_stmt_bind_param($bufStmt, "ssssssi", $chatId, $customerName, $username, $mainContent, $photoFileId, $docFileId, $isCvMessage);
                 mysqli_stmt_execute($bufStmt);
             }
 
-            // Send auto-acknowledgment ONLY once per 15-minute conversation window
-            if (!$recentlyContacted) {
-                if (isBusinessOpen()) {
-                    sendMessage($chatId, "👋 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.");
-                } else {
-                    sendMessage($chatId, "🌙 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!");
+            if ($isCvMessage) {
+                sendMessage($chatId, "✅ <b>CV Submitted Successfully!</b>\n────────────────────\nThank you, <b>" . htmlspecialchars($customerName) . "</b>! Our HR team has received your CV and will review your application shortly.");
+            } else {
+                // Send auto-acknowledgment ONLY once per 15-minute conversation window
+                if (!$recentlyContacted) {
+                    if (isBusinessOpen()) {
+                        sendMessage($chatId, "👋 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.");
+                    } else {
+                        sendMessage($chatId, "🌙 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!");
+                    }
                 }
             }
             return;
         }
+
     }
 }
 
