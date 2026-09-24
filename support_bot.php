@@ -532,7 +532,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         }
 
         $messageBody  = !empty($rawTextLines) ? implode("\n", $rawTextLines) : '';
-        $combinedText = !empty($messageBody) ? "💬 Details:\n<blockquote>" . $messageBody . "</blockquote>" : '';
+        $combinedText = !empty($messageBody) ? "💬 <b>Details:</b>\n<blockquote>" . $messageBody . "</blockquote>" : '';
 
         // Create/Update Conversation Ticket ID (Parameterized Query)
         if (isset($driver) && $driver === 'pgsql') {
@@ -567,23 +567,39 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
             $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
             $contactDisplay = "{$userLink} (<code>@{$cleanUsername}</code>)";
-            $ticketHeader = "<a href=\"{$contactUrl}\">{$contactUrl}</a>";
         } else {
             $contactUrl = "tg://user?id={$chatId}";
             $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
             $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
-            $ticketHeader = "👤 From: {$contactDisplay}";
         }
 
         if ($isCvSubmission) {
-            $mediaCaption = "📄 <b>CV Submission</b> <code>#{$convId}</code>\n"
-                          . "👤 Candidate: {$contactDisplay}\n"
-                          . (!empty($combinedText) ? $combinedText : "");
+            $ticketHeader = "📄 <b>CV SUBMISSION</b> <code>#{$convId}</code>\n"
+                          . "👤 <b>Candidate:</b> {$contactDisplay}\n"
+                          . (!empty($combinedText) ? $combinedText . "\n" : "");
+
+            $ticketBtn = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '📄 Contact Candidate', 'url' => $contactUrl]
+                    ]
+                ]
+            ];
         } else {
-            $mediaCaption = "🎫 Support Ticket <code>#{$convId}</code>\n"
-                          . "👤 From: {$contactDisplay}\n"
-                          . (!empty($combinedText) ? $combinedText : "");
+            $ticketHeader = "🎫 <b>SUPPORT TICKET</b> <code>#{$convId}</code>\n"
+                          . "👤 <b>From:</b> {$contactDisplay}\n"
+                          . (!empty($combinedText) ? $combinedText . "\n" : "");
+
+            $ticketBtn = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '💬 Contact Customer', 'url' => $contactUrl]
+                    ]
+                ]
+            ];
         }
+
+
 
         // Post ONE combined ticket message into each Telegram Support Group (or Admin fallback)
         foreach ($groups as $g) {
@@ -591,28 +607,30 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             if (!isValidChatId($gId)) continue;
             $apiRes = null;
 
-            if (!empty($photoFileId)) {
-                $apiRes = sendPhoto($gId, $photoFileId, $mediaCaption, null);
-            } elseif (!empty($docFileId)) {
-                $apiRes = sendDocument($gId, $docFileId, $mediaCaption, null);
-            }
-
-            // Always send profile card preview box with SEND MESSAGE link
-            if (!empty($username)) {
-                $linkPreviewOptions = [
-                    'url'                => $contactUrl,
-                    'prefer_small_media' => true,
-                    'show_above_text'    => false,
-                    'is_disabled'        => false
-                ];
-                $cardRes = sendMessage($gId, $contactUrl, null, false, $linkPreviewOptions);
-                if (empty($apiRes)) {
-                    $apiRes = $cardRes;
+            if ($photoFileId) {
+                $apiRes = sendPhoto($gId, $photoFileId, $ticketHeader, $ticketBtn);
+            } elseif ($docFileId) {
+                $apiRes = sendDocument($gId, $docFileId, $ticketHeader, $ticketBtn);
+            } else {
+                // Check if user has profile photo available if no public username
+                if (empty($username)) {
+                    $userProfilePhoto = getUserProfilePhotoFileId($chatId);
+                    if (!empty($userProfilePhoto)) {
+                        $apiRes = sendPhoto($gId, $userProfilePhoto, $ticketHeader, $ticketBtn);
+                    }
                 }
-            } elseif (empty($apiRes)) {
-                $apiRes = sendMessage($gId, $ticketHeader, null, false, null);
-            }
 
+                // Send text message with Telegram profile link preview card enabled
+                if (empty($apiRes)) {
+                    $linkPreviewOptions = !empty($username) ? [
+                        'url'                => $contactUrl,
+                        'prefer_small_media' => true,
+                        'show_above_text'    => false,
+                        'is_disabled'        => false
+                    ] : null;
+                    $apiRes = sendMessage($gId, $ticketHeader, $ticketBtn, false, $linkPreviewOptions);
+                }
+            }
 
 
             if (!empty($apiRes['ok']) && isset($apiRes['result']['message_id'])) {
@@ -637,8 +655,6 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 }
             }
         }
-
-
 
         // Mark pending messages as processed (Parameterized Query)
         if (isset($driver) && $driver === 'pgsql') {
