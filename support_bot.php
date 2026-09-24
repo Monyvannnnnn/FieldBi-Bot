@@ -435,9 +435,8 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         $ticketHeader = "🎫 <b>NEW CUSTOMER</b> <code>#{$convId}</code>\n"
                       . "─────────────────\n"
                       . "👤 <b>From:</b> {$contactDisplay}\n"
-                      . (!empty($combinedText) ? $combinedText . "\n" : "")
-                      . "─────────────────\n"
-                      . "💡 <i>Reply to this message in group to respond.</i>";
+                      . (!empty($combinedText) ? $combinedText . "\n" : "");
+
 
         $ticketBtn = [
             'inline_keyboard' => [
@@ -615,9 +614,8 @@ function processSupportBotUpdate($update) {
                                  . "📌 <b>Status:</b> <b>Claimed</b> by <b>" . htmlspecialchars($agentName) . "</b>\n"
                                  . "────────────────────\n"
                                  . "👤 <b>From:</b> {$contactDisplay}\n"
-                                 . (!empty($messageContent) ? "💬 <b>Message:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "")
-                                 . "────────────────────\n"
-                                 . "💡 <i>Reply to this message in group to respond.</i>";
+                                 . (!empty($messageContent) ? "💬 <b>Message:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "");
+
 
                     $claimedBtn = [
                         'inline_keyboard' => [
