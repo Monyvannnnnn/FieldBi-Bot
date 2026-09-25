@@ -1244,9 +1244,13 @@ function processSupportBotUpdate($update) {
                     $statusBadge   = "⭐ <b>Status:</b> <b>SHORTLISTED & INTERVIEW SENT</b> by <i>" . htmlspecialchars($agentName) . "</i>";
                     $toastMsg      = "⭐ Candidate Shortlisted & Interview Sent!";
 
+                    $cDate = getenv('INTERVIEW_DATE') ?: ($_ENV['INTERVIEW_DATE'] ?? 'Wednesday 12 August 2026');
+                    $cTime = getenv('INTERVIEW_TIME') ?: ($_ENV['INTERVIEW_TIME'] ?? '10am');
+                    $cLoc  = getenv('INTERVIEW_LOCATION') ?: ($_ENV['INTERVIEW_LOCATION'] ?? '6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia');
+
                     $displayGreeting = (!empty($cleanCustName) && $cleanCustName !== 'Candidate') ? "Dear <b>" . htmlspecialchars($cleanCustName) . "</b>," : "Dear <b>Mr. Chhourn Crymonyvann</b>,";
 
-                    $custNotifyMsg = "{$displayGreeting}\n\nWe're pleased to inform you that you have successfully passed our shortlist stage. We would like to invite you to attend an interview as scheduled below:\n\n📅 <b>Date:</b> Wednesday 12 August 2026\n⏰ <b>Time:</b> 10am\n📍 <b>Location:</b> 6F C7, Olympia City, Sangkat Veal Vong, Khan  7 Makara, Phnom Penh, Cambodia\n\nplease kindly confirm your availability for the scheduled time. We look forward to meeting you.";
+                    $custNotifyMsg = "{$displayGreeting}\n\nWe're pleased to inform you that you have successfully passed our shortlist stage. We would like to invite you to attend an interview as scheduled below:\n\n📅 <b>Date:</b> {$cDate}\n⏰ <b>Time:</b> {$cTime}\n📍 <b>Location:</b> {$cLoc}\n\nplease kindly confirm your availability for the scheduled time. We look forward to meeting you.";
                 } elseif ($action === 'decline') {
                     $statusText  = 'declined';
                     $statusBadge = "❌ <b>Status:</b> <b>DECLINED</b> by <i>" . htmlspecialchars($agentName) . "</i>";
@@ -1500,6 +1504,66 @@ function processSupportBotUpdate($update) {
                 sendMessage($g['group_chat_id'], $notification);
             }
             sendMessage($chatId, $notification);
+        }
+        return;
+    }
+
+    // ========================================================
+    // B.1.2 /interview COMMAND WORKFLOW FOR HR AGENTS
+    // ========================================================
+    if (preg_match('/^\/interview(?:@\w+)?(?:\s+(.*))?$/is', $text, $matches)) {
+        $agentFirstName = trim($message["from"]["first_name"] ?? '');
+        $agentLastName  = trim($message["from"]["last_name"] ?? '');
+        $agentName      = trim($agentFirstName . ' ' . $agentLastName);
+        if (empty($agentName)) $agentName = 'HR Support Agent';
+
+        $argsStr = trim($matches[1] ?? '');
+        $convRow = null;
+
+        if (isset($message["reply_to_message"])) {
+            $replyToId = $message["reply_to_message"]["message_id"];
+            if (isset($driver) && $driver === 'pgsql') {
+                $stmt = $pdo->prepare("SELECT c.id, c.customer_chat_id, c.customer_name FROM group_messages gm LEFT JOIN conversations c ON c.customer_chat_id = gm.customer_chat_id WHERE gm.group_message_id = ?");
+                $stmt->execute([$replyToId]);
+                $convRow = $stmt->fetch(PDO::FETCH_ASSOC);
+            } else {
+                $stmt = mysqli_prepare($conn, "SELECT c.id, c.customer_chat_id, c.customer_name FROM group_messages gm LEFT JOIN conversations c ON c.customer_chat_id = gm.customer_chat_id WHERE gm.group_message_id = ?");
+                mysqli_stmt_bind_param($stmt, "i", $replyToId);
+                mysqli_stmt_execute($stmt);
+                $convRow = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+            }
+        }
+
+        if (empty($convRow)) {
+            sendMessage($chatId, "⚠️ <b>How to use:</b> Reply to a candidate ticket in the group with:\n<code>/interview [Date] | [Time] | [Location]</code>\n\n<i>Example:</i>\n<code>/interview 15 August 2026 | 2:00 PM | 6F Olympia City</code>");
+            return;
+        }
+
+        $customerChatId = $convRow['customer_chat_id'] ?? '';
+        $customerName   = $convRow['customer_name'] ?? 'Candidate';
+
+        $cleanCustName = $customerName;
+        if (preg_match('/^(.*?)\s*(\(@[a-zA-Z0-9_]+\))$/', $customerName, $m)) {
+            $cleanCustName = trim($m[1]);
+        }
+
+        $cDate = getenv('INTERVIEW_DATE') ?: ($_ENV['INTERVIEW_DATE'] ?? 'Wednesday 12 August 2026');
+        $cTime = getenv('INTERVIEW_TIME') ?: ($_ENV['INTERVIEW_TIME'] ?? '10am');
+        $cLoc  = getenv('INTERVIEW_LOCATION') ?: ($_ENV['INTERVIEW_LOCATION'] ?? '6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia');
+
+        if (!empty($argsStr)) {
+            $parts = array_map('trim', explode('|', $argsStr));
+            if (!empty($parts[0])) $cDate = $parts[0];
+            if (!empty($parts[1])) $cTime = $parts[1];
+            if (!empty($parts[2])) $cLoc  = $parts[2];
+        }
+
+        $displayGreeting = (!empty($cleanCustName) && $cleanCustName !== 'Candidate') ? "Dear <b>" . htmlspecialchars($cleanCustName) . "</b>," : "Dear <b>Mr. Chhourn Crymonyvann</b>,";
+        $custNotifyMsg = "{$displayGreeting}\n\nWe're pleased to inform you that you have successfully passed our shortlist stage. We would like to invite you to attend an interview as scheduled below:\n\n📅 <b>Date:</b> {$cDate}\n⏰ <b>Time:</b> {$cTime}\n📍 <b>Location:</b> {$cLoc}\n\nplease kindly confirm your availability for the scheduled time. We look forward to meeting you.";
+
+        if (isValidChatId($customerChatId)) {
+            sendMessage($customerChatId, $custNotifyMsg);
+            sendMessage($chatId, "⭐ <b>Interview Invitation sent to {$cleanCustName}</b>\n────────────────────\n📅 <b>Date:</b> {$cDate}\n⏰ <b>Time:</b> {$cTime}\n📍 <b>Location:</b> {$cLoc}\n\n<i>Processed by HR Agent " . htmlspecialchars($agentName) . ".</i>");
         }
         return;
     }
