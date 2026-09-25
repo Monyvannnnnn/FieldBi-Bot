@@ -170,7 +170,6 @@ function initUserStatesSchema() {
                 );
                 ALTER TABLE user_states ADD COLUMN IF NOT EXISTS lang VARCHAR(10) DEFAULT 'en';
                 ALTER TABLE pending_customer_messages ADD COLUMN IF NOT EXISTS is_cv SMALLINT DEFAULT 0;
-                ALTER TABLE conversations ADD COLUMN IF NOT EXISTS assigned_agent VARCHAR(100);
             ");
         } elseif ($conn) {
             mysqli_query($conn, "
@@ -188,10 +187,6 @@ function initUserStatesSchema() {
             $check = mysqli_query($conn, "SHOW COLUMNS FROM pending_customer_messages LIKE 'is_cv'");
             if ($check && mysqli_num_rows($check) === 0) {
                 mysqli_query($conn, "ALTER TABLE pending_customer_messages ADD COLUMN is_cv TINYINT(1) DEFAULT 0");
-            }
-            $checkAgent = mysqli_query($conn, "SHOW COLUMNS FROM conversations LIKE 'assigned_agent'");
-            if ($checkAgent && mysqli_num_rows($checkAgent) === 0) {
-                mysqli_query($conn, "ALTER TABLE conversations ADD COLUMN assigned_agent VARCHAR(100)");
             }
         }
     } catch (Throwable $e) {}
@@ -467,176 +462,6 @@ function getI18nKeyboard($key, $lang = 'en') {
     }
 
     return null;
-}
-
-/**
- * Generate Admin Dashboard Report Text
- */
-function generateDashboardReport($view = 'summary') {
-    global $pdo, $conn, $driver;
-    initUserStatesSchema();
-
-    $todayDate = date('d M Y | h:i A');
-
-    // 1. Fetch Ticket Counts
-    $ticketsToday   = 0;
-    $pendingTickets = 0;
-    $handledTickets = 0;
-    $totalTickets   = 0;
-
-    try {
-        if (isset($driver) && $driver === 'pgsql') {
-            $ticketsToday   = (int)$pdo->query("SELECT COUNT(*) FROM conversations WHERE DATE(created_at) = CURRENT_DATE")->fetchColumn();
-            $pendingTickets = (int)$pdo->query("SELECT COUNT(*) FROM conversations WHERE status = 'pending'")->fetchColumn();
-            $handledTickets = (int)$pdo->query("SELECT COUNT(*) FROM conversations WHERE status = 'handled'")->fetchColumn();
-            $totalTickets   = (int)$pdo->query("SELECT COUNT(*) FROM conversations")->fetchColumn();
-        } else {
-            $res = mysqli_query($conn, "SELECT COUNT(*) as c FROM conversations WHERE DATE(created_at) = CURDATE()");
-            if ($res) $ticketsToday = (int)(mysqli_fetch_assoc($res)['c'] ?? 0);
-
-            $res = mysqli_query($conn, "SELECT COUNT(*) as c FROM conversations WHERE status = 'pending'");
-            if ($res) $pendingTickets = (int)(mysqli_fetch_assoc($res)['c'] ?? 0);
-
-            $res = mysqli_query($conn, "SELECT COUNT(*) as c FROM conversations WHERE status = 'handled'");
-            if ($res) $handledTickets = (int)(mysqli_fetch_assoc($res)['c'] ?? 0);
-
-            $res = mysqli_query($conn, "SELECT COUNT(*) as c FROM conversations");
-            if ($res) $totalTickets = (int)(mysqli_fetch_assoc($res)['c'] ?? 0);
-        }
-    } catch (Throwable $e) {}
-
-    // 2. Fetch Agent Performance
-    $agentPerf = [];
-    try {
-        if (isset($driver) && $driver === 'pgsql') {
-            $stmt = $pdo->query("
-                SELECT assigned_agent, COUNT(*) as count 
-                FROM conversations 
-                WHERE assigned_agent IS NOT NULL AND assigned_agent != '' 
-                GROUP BY assigned_agent 
-                ORDER BY count DESC 
-                LIMIT 5
-            ");
-            $agentPerf = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } else {
-            $res = mysqli_query($conn, "
-                SELECT assigned_agent, COUNT(*) as count 
-                FROM conversations 
-                WHERE assigned_agent IS NOT NULL AND assigned_agent != '' 
-                GROUP BY assigned_agent 
-                ORDER BY count DESC 
-                LIMIT 5
-            ");
-            if ($res) $agentPerf = mysqli_fetch_all($res, MYSQLI_ASSOC);
-        }
-    } catch (Throwable $e) {}
-
-    // 3. Fetch Recent Customer Tickets
-    $recentTickets = [];
-    try {
-        if (isset($driver) && $driver === 'pgsql') {
-            $stmt = $pdo->query("SELECT id, customer_name, customer_chat_id, status, assigned_agent, created_at FROM conversations ORDER BY id DESC LIMIT 5");
-            $recentTickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } else {
-            $res = mysqli_query($conn, "SELECT id, customer_name, customer_chat_id, status, assigned_agent, created_at FROM conversations ORDER BY id DESC LIMIT 5");
-            if ($res) $recentTickets = mysqli_fetch_all($res, MYSQLI_ASSOC);
-        }
-    } catch (Throwable $e) {}
-
-    // Build View Content
-    if ($view === 'agents') {
-        $report = "👥 <b>AGENT PERFORMANCE BREAKDOWN</b>\n"
-                . "────────────────────\n"
-                . "📅 <i>As of {$todayDate}</i>\n\n";
-
-        if (empty($agentPerf)) {
-            $report .= "<i>No tickets handled by agents yet.</i>\n";
-        } else {
-            $rankIcons = ['🥇', '🥈', '🥉', '🏅', '🏅'];
-            foreach ($agentPerf as $idx => $ap) {
-                $icon = $rankIcons[$idx] ?? '🏅';
-                $name = htmlspecialchars($ap['assigned_agent']);
-                $cnt  = (int)$ap['count'];
-                $report .= "{$icon} <b>{$name}:</b> <code>{$cnt}</code> tickets handled\n";
-            }
-        }
-        $report .= "\n📊 <b>Total Handled:</b> <code>{$handledTickets}</code> / <code>{$totalTickets}</code>";
-        return $report;
-    }
-
-    if ($view === 'customers') {
-        $report = "👤 <b>RECENT CUSTOMER TICKET LIST</b>\n"
-                . "────────────────────\n"
-                . "📅 <i>As of {$todayDate}</i>\n\n";
-
-        if (empty($recentTickets)) {
-            $report .= "<i>No conversations recorded yet.</i>\n";
-        } else {
-            foreach ($recentTickets as $t) {
-                $tId   = $t['id'];
-                $cName = htmlspecialchars($t['customer_name'] ?? 'Customer');
-                $st    = $t['status'] === 'handled' ? '✅ Handled' : '⏳ Pending';
-                $agent = !empty($t['assigned_agent']) ? " (<i>" . htmlspecialchars($t['assigned_agent']) . "</i>)" : "";
-                $report .= "• <b>Ticket #{$tId}</b> — {$cName}\n  Status: {$st}{$agent}\n\n";
-            }
-        }
-        return $report;
-    }
-
-    // Default 'summary' View
-    $report = "📊 <b>SUPPORT GROUP ADMIN DASHBOARD</b>\n"
-            . "────────────────────\n"
-            . "📅 <b>Date:</b> {$todayDate}\n\n"
-            . "📈 <b>TICKET STATS TODAY</b>\n"
-            . "• <b>Tickets Today:</b> <code>{$ticketsToday}</code>\n"
-            . "• ⏳ <b>Pending Tickets:</b> <code>{$pendingTickets}</code>\n"
-            . "• ✅ <b>Resolved / Handled:</b> <code>{$handledTickets}</code>\n"
-            . "• 📁 <b>All-Time Tickets:</b> <code>{$totalTickets}</code>\n\n"
-            . "👥 <b>TOP AGENTS TODAY</b>\n";
-
-    if (empty($agentPerf)) {
-        $report .= "• <i>No tickets claimed yet today.</i>\n";
-    } else {
-        $rankIcons = ['🥇', '🥈', '🥉'];
-        foreach (array_slice($agentPerf, 0, 3) as $idx => $ap) {
-            $icon = $rankIcons[$idx] ?? '🏅';
-            $name = htmlspecialchars($ap['assigned_agent']);
-            $cnt  = (int)$ap['count'];
-            $report .= "• {$icon} <b>{$name}:</b> {$cnt} handled\n";
-        }
-    }
-
-    $report .= "\n👤 <b>RECENT TICKETS</b>\n";
-    if (empty($recentTickets)) {
-        $report .= "• <i>No tickets recorded yet.</i>\n";
-    } else {
-        foreach (array_slice($recentTickets, 0, 3) as $t) {
-            $tId   = $t['id'];
-            $cName = htmlspecialchars($t['customer_name'] ?? 'Customer');
-            $st    = $t['status'] === 'handled' ? '✅' : '⏳';
-            $report .= "• Ticket #{$tId} — {$cName} [{$st}]\n";
-        }
-    }
-
-    return $report;
-}
-
-/**
- * Get Admin Dashboard Inline Keyboard
- */
-function getDashboardKeyboard($currentView = 'summary') {
-    return [
-        'inline_keyboard' => [
-            [
-                ['text' => ($currentView === 'summary' ? '🔘 Summary' : '📊 Summary'), 'callback_data' => 'dash_summary'],
-                ['text' => ($currentView === 'agents' ? '🔘 Top Agents' : '👥 Top Agents'), 'callback_data' => 'dash_agents'],
-                ['text' => ($currentView === 'customers' ? '🔘 Customers' : '👤 Customers'), 'callback_data' => 'dash_customers']
-            ],
-            [
-                ['text' => '🔄 Refresh Dashboard', 'callback_data' => 'dash_refresh']
-            ]
-        ]
-    ];
 }
 
 /**
@@ -1257,24 +1082,6 @@ function processSupportBotUpdate($update) {
             return;
         }
 
-        if (strpos($cbData, 'dash_') === 0) {
-            $gChatId = (string)($cb["message"]["chat"]["id"] ?? '');
-            $gMsgId  = $cb["message"]["message_id"] ?? 0;
-
-            $view = 'summary';
-            if ($cbData === 'dash_agents') $view = 'agents';
-            if ($cbData === 'dash_customers') $view = 'customers';
-
-            answerCallbackQuery($cbId, "📊 Dashboard updated");
-            $content  = generateDashboardReport($view);
-            $keyboard = getDashboardKeyboard($view);
-
-            if ($gChatId && $gMsgId) {
-                editMessageText($gChatId, $gMsgId, $content, $keyboard);
-            }
-            return;
-        }
-
 
         if (strpos($cbData, 'claimed') === 0) {
             answerCallbackQuery($cbId, "ℹ️ This ticket has already been claimed.", false);
@@ -1505,15 +1312,6 @@ function processSupportBotUpdate($update) {
             sendMessage($chatId, "🛡️ <b>SUPPORT GROUP AUTHORIZED</b>\n────────────────────\nGroup: <b>" . htmlspecialchars($groupTitle) . "</b>\nStatus: 🟢 <b>Active</b>\n\n<i>This group will now receive all incoming customer support tickets.</i>");
         }
 
-        // Handle /dashboard command inside authorized support group
-        if (preg_match('/^\/(dashboard|stats|admin)(?:@\w+)?(?:\s+(agents|customers|refresh))?/i', $text, $matches)) {
-            $subView = strtolower($matches[2] ?? 'summary');
-            $dashboardContent  = generateDashboardReport($subView);
-            $dashboardKeyboard = getDashboardKeyboard($subView);
-            sendMessage($chatId, $dashboardContent, $dashboardKeyboard);
-            return;
-        }
-
         // Ignore commands or empty messages in group
         if (empty($mainContent) && !$hasMedia) {
             return;
@@ -1600,16 +1398,6 @@ function processSupportBotUpdate($update) {
                 sendMessage($chatId, getI18nText('lang_prompt', $userLang), getI18nKeyboard('lang_menu', $userLang));
                 return;
             }
-        }
-
-        if (preg_match('/^\/(dashboard|stats|admin)(?:@\w+)?(?:\s+(agents|customers|refresh))?/i', $text, $matches)) {
-            if (!empty(ADMIN_CHAT_ID) && $senderId === ADMIN_CHAT_ID) {
-                $subView = strtolower($matches[2] ?? 'summary');
-                sendMessage($chatId, generateDashboardReport($subView), getDashboardKeyboard($subView));
-            } else {
-                sendMessage($chatId, "⚠️ <b>Access Restricted</b>\n────────────────────\nThe <code>/dashboard</code> command is only available inside authorized Telegram Support Groups.");
-            }
-            return;
         }
 
         if (strpos($text, '/start') === 0) {
