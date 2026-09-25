@@ -411,8 +411,8 @@ function getI18nText($key, $lang = 'en', $params = []) {
             'kh' => "📋 <b>ឱកាសការងារ</b>\n────────────────────\n• <b>Software Engineer</b>\n• <b>Marketing Specialist</b>\n• <b>Sales Representative</b>\n\n📄 <i>ចុច /Submit_CV ដើម្បីដាក់ពាក្យផ្ទាល់!</i>"
         ],
         'faq_location' => [
-            'en' => "📍 <b>OFFICE LOCATION</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\nPhnom Penh, Cambodia\n\n📍 <i>Contact our support team for full office directions.</i>",
-            'kh' => "📍 <b>ទីតាំងការិយាល័យ</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\nរាជធានីភ្នំពេញ, ប្រទេសកម្ពុជា\n\n📍 <i>ទាក់ទងក្រុមការងារដើម្បីទទួលបានព័ត៌មានទីតាំងលម្អិត។</i>"
+            'en' => "📍 <b>OFFICE LOCATION</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\n📍 6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">Open Location on Map</a>",
+            'kh' => "📍 <b>ទីតាំងការិយាល័យ</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\n📍 អគារ C7 ជាន់ទី 6, Olympia City, សង្កាត់វាលវង់, ខណ្ឌ 7 មករា, ភ្នំពេញ\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">ចុចទីនេះដើម្បីមើលលើផែនទី (Google Maps)</a>"
         ],
         'faq_hours' => [
             'en' => "⏰ <b>WORKING HOURS</b>\n────────────────────\n• <b>Monday – Friday:</b> 8:00 AM – 5:00 PM (ICT)\n• <b>Saturday:</b> 8:00 AM – 12:00 PM\n• <b>Sunday:</b> Closed",
@@ -477,13 +477,14 @@ function getI18nKeyboard($key, $lang = 'en') {
     }
 
     if ($key === 'faq_menu') {
+        $mapUrl = getenv('OFFICE_MAP_URL') ?: ($_ENV['OFFICE_MAP_URL'] ?? 'https://maps.app.goo.gl/LP7KziVkBsDzGSTx9');
         return [
             'inline_keyboard' => [
                 [
                     ['text' => ($lang === 'kh' ? '📋 ឱកាសការងារ' : '📋 Job Openings'), 'callback_data' => 'faq_jobs']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '📍 ទីតាំងការិយាល័យ' : '📍 Office Location'), 'callback_data' => 'faq_location'],
+                    ['text' => ($lang === 'kh' ? '📍 ទីតាំងការិយាល័យ' : '📍 Office Location'), 'url' => $mapUrl],
                     ['text' => ($lang === 'kh' ? '⏰ ម៉ោងធ្វើការ' : '⏰ Working Hours'), 'callback_data' => 'faq_hours']
                 ]
             ]
@@ -1494,7 +1495,21 @@ function processSupportBotUpdate($update) {
                 return;
             }
 
-            if (in_array($cbData, ['faq_jobs', 'faq_location', 'faq_hours'])) {
+            if ($cbData === 'faq_location') {
+                $mapUrl = getenv('OFFICE_MAP_URL') ?: ($_ENV['OFFICE_MAP_URL'] ?? 'https://maps.google.com/?q=Olympia+City+Phnom+Penh+Cambodia');
+                $mapBtn = [
+                    'inline_keyboard' => [
+                        [
+                            ['text' => ($userLang === 'kh' ? '🗺️ បើកមើលក្នុង Google Maps' : '🗺️ Open in Google Maps'), 'url' => $mapUrl]
+                        ]
+                    ]
+                ];
+                answerCallbackQuery($cbId, $userLang === 'kh' ? "បានទាញយកចម្លើយ" : "Answer loaded");
+                sendMessage($userChatId, getI18nText('faq_location', $userLang), $mapBtn);
+                return;
+            }
+
+            if (in_array($cbData, ['faq_jobs', 'faq_hours'])) {
                 answerCallbackQuery($cbId, $userLang === 'kh' ? "បានទាញយកចម្លើយ" : "Answer loaded");
                 sendMessage($userChatId, getI18nText($cbData, $userLang));
             }
