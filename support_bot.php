@@ -59,6 +59,36 @@ function isValidChatId($chatId) {
 }
 
 /**
+ * Synchronize Telegram Bot Name & Description ("What can this bot do?" card)
+ */
+function updateBotProfileInfo() {
+    $botToken = BOT_TOKEN;
+    if (empty($botToken)) return;
+
+    $descText = "👋 Welcome to FieldBi Cambodia Support!\n\nFieldbi is a technology & software solutions company specializing in digital platforms and software engineering.\n\n💬 Send us your message, question, or job application details below, and our support team will assist you shortly.";
+
+    $endpoints = [
+        "https://api.telegram.org/bot{$botToken}/setMyName" => ['name' => 'FieldBi Cambodia Support'],
+        "https://api.telegram.org/bot{$botToken}/setMyDescription" => ['description' => $descText],
+        "https://api.telegram.org/bot{$botToken}/setMyShortDescription" => ['short_description' => 'FieldBi Cambodia Support — Official Customer & Career Support Bot.']
+    ];
+
+    foreach ($endpoints as $url => $postData) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query($postData),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
+        ]);
+        curl_exec($ch);
+        curl_close($ch);
+    }
+}
+
+/**
  * Check if the business is currently open (Working Hours Logic)
  * Default: Mon-Fri, 08:00 AM - 05:00 PM (Asia/Phnom_Penh / ICT)
  */
@@ -351,8 +381,8 @@ function getUserLang($chatId) {
 function getI18nText($key, $lang = 'en', $params = []) {
     $translations = [
         'welcome' => [
-            'en' => "👋 <b>Welcome to FieldBi Cambodia Support!</b>\n────────────────────\nFieldbi is a technology & software solutions company.\n\nPlease select an option below or type your message:\n📄 /Submit_CV — Submit your CV / Resume\n💬 /Ask_Question — Ask a Question or Inquiry\n❓ /FAQ — Frequently Asked Questions\n🌐 /lang — Change Language (ភាសា)",
-            'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន FieldBi Cambodia!</b>\n────────────────────\nFieldbi គឺជាក្រុមហ៊ុនផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ។\n\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នក៖\n📄 /Submit_CV — ដាក់ពាក្យ / CV\n💬 /Ask_Question — សួរសំណួរ\n❓ /FAQ — សំណួរដែលសួរញឹកញាប់\n🌐 /lang — ផ្លាស់ប្តូរភាសា"
+            'en' => "👋 <b>Welcome to Fieldbi Support!</b>\n────────────────────\nFieldbi is a technology & software solutions company.\n\nPlease select an option below or type your message:\n📄 /Submit_CV — Submit your CV / Resume\n💬 /Ask_Question — Ask a Question or Inquiry\n❓ /FAQ — Frequently Asked Questions\n🌐 /lang — Change Language (ភាសា)",
+            'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន Fieldbi!</b>\n────────────────────\nFieldbi គឺជាក្រុមហ៊ុនផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ។\n\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នក៖\n📄 /Submit_CV — ដាក់ពាក្យ / CV\n💬 /Ask_Question — សួរសំណួរ\n❓ /FAQ — សំណួរដែលសួរញឹកញាប់\n🌐 /lang — ផ្លាស់ប្តូរភាសា"
         ],
         'submit_cv_prompt' => [
             'en' => "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>",
@@ -387,12 +417,12 @@ function getI18nText($key, $lang = 'en', $params = []) {
             'kh' => "✅ <b>ទទួលបាន CV រួចរាល់ហើយ!</b>\n────────────────────\nសូមអរគុណ <b>{name}</b>! 📄\n\nក្រុមការងារធនធានមនុស្ស (HR) របស់យើងបានទទួល CV របស់អ្នកហើយ។ យើងនឹងពិនិត្យមើល និងទាក់ទងទៅអ្នកវិញក្នុងពេលឆាប់ៗនេះ。\n\n💬 <i>ប្រសិនបើអ្នកចង់ផ្ញើឯកសារបន្ថែម អ្នកអាចផ្ញើនៅទីនេះបានគ្រប់ពេល។</i>"
         ],
         'auto_ack_open' => [
-            'en' => "👋 <b>Thank you for contacting FieldBi Cambodia Support!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.",
-            'kh' => "👋 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ FieldBi Cambodia Support!</b>\n────────────────────\nក្រុមការងាររបស់យើងបានទទួលសាររបស់អ្នកហើយ និងកំពុងរៀបចំឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ।"
+            'en' => "👋 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.",
+            'kh' => "👋 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ Fieldbi!</b>\n────────────────────\nក្រុមការងាររបស់យើងបានទទួលសាររបស់អ្នកហើយ និងកំពុងរៀបចំឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ।"
         ],
         'auto_ack_closed' => [
-            'en' => "🌙 <b>Thank you for contacting FieldBi Cambodia Support!</b>\n────────────────────\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!",
-            'kh' => "🌙 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ FieldBi Cambodia Support!</b>\n────────────────────\nពេលនេះការិយាល័យរបស់យើងត្រូវបានបិទសម្រាក។\n⏰ <b>ម៉ោងធ្វើការ:</b> ច័ន្ទ – សុក្រ, 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n\nសាររបស់អ្នកត្រូវបានកត់ត្រាទុក ហើយក្រុមការងារនឹងឆ្លើយតបភ្លាមៗនៅពេលបើកដំណើរការឡើងវិញ!"
+            'en' => "🌙 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!",
+            'kh' => "🌙 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ Fieldbi!</b>\n────────────────────\nពេលនេះការិយាល័យរបស់យើងត្រូវបានបិទសម្រាក។\n⏰ <b>ម៉ោងធ្វើការ:</b> ច័ន្ទ – សុក្រ, 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n\nសាររបស់អ្នកត្រូវបានកត់ត្រាទុក ហើយក្រុមការងារនឹងឆ្លើយតបភ្លាមៗនៅពេលបើកដំណើរការឡើងវិញ!"
         ],
         'lang_prompt' => [
             'en' => "🌐 <b>SELECT LANGUAGE / ជ្រើសរើសភាសា</b>\n────────────────────\nPlease select your preferred language below:\n• <code>/lang kh</code> — ភាសាខ្មែរ (Khmer)\n• <code>/lang en</code> — English",
