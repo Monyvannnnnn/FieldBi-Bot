@@ -963,7 +963,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 'inline_keyboard' => [
                     [
                         ['text' => '📄 Contact Candidate', 'url' => $contactUrl],
-                        ['text' => '✅ Claim Ticket', 'callback_data' => "claim_{$convId}"]
+                        ['text' => '👤 Handle Request', 'callback_data' => "claim_{$convId}"]
                     ],
                     [
                         ['text' => '⭐ Shortlist & Interview', 'callback_data' => "hr_interview_{$convId}"],
@@ -986,7 +986,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 'inline_keyboard' => [
                     [
                         ['text' => '💬 Contact Customer', 'url' => $contactUrl],
-                        ['text' => '✅ Claim Ticket', 'callback_data' => "claim_{$convId}"]
+                        ['text' => '👤 Handle Request', 'callback_data' => "claim_{$convId}"]
                     ]
                 ]
             ];
@@ -1174,7 +1174,7 @@ function processSupportBotUpdate($update) {
                         'inline_keyboard' => [
                             [
                                 ['text' => '📄 Contact Customer', 'url' => $contactUrl],
-                                ['text' => '✅ Claimed', 'callback_data' => 'claimed']
+                                ['text' => '✅ Handled', 'callback_data' => 'claimed']
                             ]
                         ]
                     ];
@@ -1187,7 +1187,7 @@ function processSupportBotUpdate($update) {
                 }
             }
 
-            answerCallbackQuery($cbId, "✅ Ticket #{$convId} claimed successfully!", false);
+            answerCallbackQuery($cbId, "✅ Request #{$convId} assigned to you!", false);
             return;
         }
 
