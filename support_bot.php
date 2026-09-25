@@ -603,6 +603,128 @@ function sendDocument($chatId, $fileId, $caption = '', $replyMarkup = null) {
 }
 
 /**
+ * Send voice message to Telegram chat
+ */
+function sendVoice($chatId, $fileId, $caption = '', $replyMarkup = null) {
+    if (!isValidChatId($chatId)) return null;
+    $url = "https://api.telegram.org/bot" . BOT_TOKEN . "/sendVoice";
+    $postFields = [
+        'chat_id'    => $chatId,
+        'voice'      => $fileId,
+        'caption'    => $caption,
+        'parse_mode' => 'HTML'
+    ];
+    if ($replyMarkup !== null) {
+        $postFields['reply_markup'] = is_array($replyMarkup) ? json_encode($replyMarkup) : $replyMarkup;
+    }
+    
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($postFields),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    return json_decode($response, true);
+}
+
+/**
+ * Send audio file to Telegram chat
+ */
+function sendAudio($chatId, $fileId, $caption = '', $replyMarkup = null) {
+    if (!isValidChatId($chatId)) return null;
+    $url = "https://api.telegram.org/bot" . BOT_TOKEN . "/sendAudio";
+    $postFields = [
+        'chat_id'    => $chatId,
+        'audio'      => $fileId,
+        'caption'    => $caption,
+        'parse_mode' => 'HTML'
+    ];
+    if ($replyMarkup !== null) {
+        $postFields['reply_markup'] = is_array($replyMarkup) ? json_encode($replyMarkup) : $replyMarkup;
+    }
+    
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($postFields),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    return json_decode($response, true);
+}
+
+/**
+ * Send video file to Telegram chat
+ */
+function sendVideo($chatId, $fileId, $caption = '', $replyMarkup = null) {
+    if (!isValidChatId($chatId)) return null;
+    $url = "https://api.telegram.org/bot" . BOT_TOKEN . "/sendVideo";
+    $postFields = [
+        'chat_id'    => $chatId,
+        'video'      => $fileId,
+        'caption'    => $caption,
+        'parse_mode' => 'HTML'
+    ];
+    if ($replyMarkup !== null) {
+        $postFields['reply_markup'] = is_array($replyMarkup) ? json_encode($replyMarkup) : $replyMarkup;
+    }
+    
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($postFields),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    return json_decode($response, true);
+}
+
+/**
+ * Send sticker to Telegram chat
+ */
+function sendSticker($chatId, $fileId, $replyMarkup = null) {
+    if (!isValidChatId($chatId)) return null;
+    $url = "https://api.telegram.org/bot" . BOT_TOKEN . "/sendSticker";
+    $postFields = [
+        'chat_id' => $chatId,
+        'sticker' => $fileId
+    ];
+    if ($replyMarkup !== null) {
+        $postFields['reply_markup'] = is_array($replyMarkup) ? json_encode($replyMarkup) : $replyMarkup;
+    }
+    
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($postFields),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    return json_decode($response, true);
+}
+
+/**
  * Answer Telegram Callback Query (Toast / Alert notification)
  */
 function answerCallbackQuery($callbackQueryId, $text = '', $showAlert = false) {
@@ -1275,6 +1397,10 @@ function processSupportBotUpdate($update) {
     $caption   = trim($message["caption"] ?? '');
     $photo     = $message["photo"] ?? null;
     $document  = $message["document"] ?? null;
+    $voice     = $message["voice"] ?? null;
+    $audio     = $message["audio"] ?? null;
+    $video     = $message["video"] ?? null;
+    $sticker   = $message["sticker"] ?? null;
     $chatId    = (string)($message["chat"]["id"] ?? '');
     $senderId  = (string)($message["from"]["id"] ?? '');
     $chatType  = $message["chat"]["type"] ?? 'private';
@@ -1284,10 +1410,14 @@ function processSupportBotUpdate($update) {
         return;
     }
 
-    $photoFileId = !empty($photo) ? end($photo)["file_id"] : null;
-    $docFileId   = !empty($document) ? $document["file_id"] : null;
-    $hasMedia    = !empty($photoFileId) || !empty($docFileId);
-    $mainContent = !empty($text) ? $text : $caption;
+    $photoFileId   = !empty($photo) ? end($photo)["file_id"] : null;
+    $docFileId     = !empty($document) ? $document["file_id"] : null;
+    $voiceFileId   = !empty($voice) ? $voice["file_id"] : null;
+    $audioFileId   = !empty($audio) ? $audio["file_id"] : null;
+    $videoFileId   = !empty($video) ? $video["file_id"] : null;
+    $stickerFileId = !empty($sticker) ? $sticker["file_id"] : null;
+    $hasMedia      = !empty($photoFileId) || !empty($docFileId) || !empty($voiceFileId) || !empty($audioFileId) || !empty($videoFileId) || !empty($stickerFileId);
+    $mainContent   = !empty($text) ? $text : $caption;
 
     // ========================================================
     // B.1 /handled COMMAND WORKFLOW
@@ -1436,7 +1566,19 @@ function processSupportBotUpdate($update) {
                 mysqli_stmt_execute($upStmt);
             }
 
-            if ($photoFileId) {
+            if ($voiceFileId) {
+                sendVoice($targetCustomerChatId, $voiceFileId, $caption);
+                sendMessage($chatId, "✅ <b>Handled by {$agentName}</b> (Voice message sent to {$userLink})");
+            } elseif ($audioFileId) {
+                sendAudio($targetCustomerChatId, $audioFileId, $caption);
+                sendMessage($chatId, "✅ <b>Handled by {$agentName}</b> (Audio sent to {$userLink})");
+            } elseif ($videoFileId) {
+                sendVideo($targetCustomerChatId, $videoFileId, $caption);
+                sendMessage($chatId, "✅ <b>Handled by {$agentName}</b> (Video sent to {$userLink})");
+            } elseif ($stickerFileId) {
+                sendSticker($targetCustomerChatId, $stickerFileId);
+                sendMessage($chatId, "✅ <b>Handled by {$agentName}</b> (Sticker sent to {$userLink})");
+            } elseif ($photoFileId) {
                 sendPhoto($targetCustomerChatId, $photoFileId, $caption);
                 sendMessage($chatId, "✅ <b>Handled by {$agentName}</b> (Photo sent to {$userLink})");
             } elseif ($docFileId) {
@@ -1527,7 +1669,19 @@ function processSupportBotUpdate($update) {
             }
             $userLink = "<a href=\"tg://user?id={$targetCustomerChatId}\">" . htmlspecialchars($cleanCustName) . "</a>";
 
-            if ($photoFileId) {
+            if ($voiceFileId) {
+                sendVoice($targetCustomerChatId, $voiceFileId, $caption);
+                sendMessage($chatId, "✅ <b>Voice Message Delivered</b> to {$userLink} by <i>{$agentName}</i>");
+            } elseif ($audioFileId) {
+                sendAudio($targetCustomerChatId, $audioFileId, $caption);
+                sendMessage($chatId, "✅ <b>Audio Delivered</b> to {$userLink} by <i>{$agentName}</i>");
+            } elseif ($videoFileId) {
+                sendVideo($targetCustomerChatId, $videoFileId, $caption);
+                sendMessage($chatId, "✅ <b>Video Delivered</b> to {$userLink} by <i>{$agentName}</i>");
+            } elseif ($stickerFileId) {
+                sendSticker($targetCustomerChatId, $stickerFileId);
+                sendMessage($chatId, "✅ <b>Sticker Delivered</b> to {$userLink} by <i>{$agentName}</i>");
+            } elseif ($photoFileId) {
                 sendPhoto($targetCustomerChatId, $photoFileId, $caption);
                 sendMessage($chatId, "✅ <b>Photo Delivered</b> to {$userLink} by <i>{$agentName}</i>");
             } elseif ($docFileId) {
