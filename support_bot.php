@@ -1200,16 +1200,25 @@ function processSupportBotUpdate($update) {
                 $gMsgId  = $msg["message_id"];
 
                 $tomorrowText = date('D d M', strtotime('+1 day'));
+                $day2Text     = date('D d M', strtotime('+2 days'));
+                $day3Text     = date('D d M', strtotime('+3 days'));
 
                 $timeOptionsBtn = [
                     'inline_keyboard' => [
                         [
-                            ['text' => "📅 {$tomorrowText} @ 10:00 AM", 'callback_data' => "hrtime_{$convId}_t10"],
-                            ['text' => "📅 {$tomorrowText} @ 02:00 PM", 'callback_data' => "hrtime_{$convId}_t2"]
+                            ['text' => "🌅 Tomorrow 10:00 AM ({$tomorrowText})", 'callback_data' => "hrtime_{$convId}_tom10"],
+                            ['text' => "☀️ Tomorrow 02:00 PM ({$tomorrowText})", 'callback_data' => "hrtime_{$convId}_tom2"]
                         ],
                         [
-                            ['text' => '📅 Wed 12 Aug (Default)', 'callback_data' => "hrtime_{$convId}_def"],
-                            ['text' => '✍️ Custom (/interview)', 'callback_data' => "hrtime_{$convId}_custom"]
+                            ['text' => "📅 {$day2Text} @ 10:00 AM", 'callback_data' => "hrtime_{$convId}_d210"],
+                            ['text' => "📅 {$day2Text} @ 02:00 PM", 'callback_data' => "hrtime_{$convId}_d22"]
+                        ],
+                        [
+                            ['text' => "📅 {$day3Text} @ 10:00 AM", 'callback_data' => "hrtime_{$convId}_d310"],
+                            ['text' => "📅 {$day3Text} @ 02:00 PM", 'callback_data' => "hrtime_{$convId}_d32"]
+                        ],
+                        [
+                            ['text' => '⚡ Standard Schedule (Default)', 'callback_data' => "hrtime_{$convId}_def"]
                         ]
                     ]
                 ];
@@ -1217,13 +1226,13 @@ function processSupportBotUpdate($update) {
                 if (isset($msg["caption"])) {
                     $origCaption = $msg["caption"];
                     if (strpos($origCaption, '⏱️') === false) {
-                        $origCaption .= "\n\n⏱️ <b>Select interview time slot for candidate:</b>";
+                        $origCaption .= "\n\n⏱️ <b>Tap a button below to select interview time:</b>";
                     }
                     editMessageCaption($gChatId, $gMsgId, $origCaption, $timeOptionsBtn);
                 } else {
                     $origText = $msg["text"] ?? '';
                     if (strpos($origText, '⏱️') === false) {
-                        $origText .= "\n\n⏱️ <b>Select interview time slot for candidate:</b>";
+                        $origText .= "\n\n⏱️ <b>Tap a button below to select interview time:</b>";
                     }
                     editMessageText($gChatId, $gMsgId, $origText, $timeOptionsBtn);
                 }
@@ -1380,11 +1389,23 @@ function processSupportBotUpdate($update) {
 
                 $cLoc  = getenv('INTERVIEW_LOCATION') ?: ($_ENV['INTERVIEW_LOCATION'] ?? '6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia');
 
-                if ($slot === 't10') {
+                if ($slot === 'tom10') {
                     $cDate = date('l d F Y', strtotime('+1 day'));
                     $cTime = '10:00 AM';
-                } elseif ($slot === 't2') {
+                } elseif ($slot === 'tom2') {
                     $cDate = date('l d F Y', strtotime('+1 day'));
+                    $cTime = '02:00 PM';
+                } elseif ($slot === 'd210') {
+                    $cDate = date('l d F Y', strtotime('+2 days'));
+                    $cTime = '10:00 AM';
+                } elseif ($slot === 'd22') {
+                    $cDate = date('l d F Y', strtotime('+2 days'));
+                    $cTime = '02:00 PM';
+                } elseif ($slot === 'd310') {
+                    $cDate = date('l d F Y', strtotime('+3 days'));
+                    $cTime = '10:00 AM';
+                } elseif ($slot === 'd32') {
+                    $cDate = date('l d F Y', strtotime('+3 days'));
                     $cTime = '02:00 PM';
                 } else {
                     $cDate = getenv('INTERVIEW_DATE') ?: ($_ENV['INTERVIEW_DATE'] ?? 'Wednesday 12 August 2026');
