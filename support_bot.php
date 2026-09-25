@@ -151,7 +151,7 @@ function getUserProfilePhotoFileId($userId) {
 }
 
 /**
- * Initialize user_states table and is_cv column if not exist
+ * Initialize user_states table and is_cv/lang columns if not exist
  */
 function initUserStatesSchema() {
     global $pdo, $conn, $driver;
@@ -165,8 +165,10 @@ function initUserStatesSchema() {
                 CREATE TABLE IF NOT EXISTS user_states (
                     customer_chat_id VARCHAR(50) PRIMARY KEY,
                     current_mode VARCHAR(50) DEFAULT 'general',
+                    lang VARCHAR(10) DEFAULT 'en',
                     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
                 );
+                ALTER TABLE user_states ADD COLUMN IF NOT EXISTS lang VARCHAR(10) DEFAULT 'en';
                 ALTER TABLE pending_customer_messages ADD COLUMN IF NOT EXISTS is_cv SMALLINT DEFAULT 0;
             ");
         } elseif ($conn) {
@@ -174,9 +176,14 @@ function initUserStatesSchema() {
                 CREATE TABLE IF NOT EXISTS user_states (
                     customer_chat_id VARCHAR(50) PRIMARY KEY,
                     current_mode VARCHAR(50) DEFAULT 'general',
+                    lang VARCHAR(10) DEFAULT 'en',
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             ");
+            $checkLang = mysqli_query($conn, "SHOW COLUMNS FROM user_states LIKE 'lang'");
+            if ($checkLang && mysqli_num_rows($checkLang) === 0) {
+                mysqli_query($conn, "ALTER TABLE user_states ADD COLUMN lang VARCHAR(10) DEFAULT 'en'");
+            }
             $check = mysqli_query($conn, "SHOW COLUMNS FROM pending_customer_messages LIKE 'is_cv'");
             if ($check && mysqli_num_rows($check) === 0) {
                 mysqli_query($conn, "ALTER TABLE pending_customer_messages ADD COLUMN is_cv TINYINT(1) DEFAULT 0");
@@ -197,7 +204,14 @@ function setUserMode($chatId, $mode) {
     if (!is_dir($stateDir)) {
         @mkdir($stateDir, 0777, true);
     }
-    @file_put_contents("{$stateDir}/{$chatId}.json", json_encode(['mode' => $mode, 'time' => time()]));
+    $stateFile = "{$stateDir}/{$chatId}.json";
+    $existing = [];
+    if (file_exists($stateFile)) {
+        $existing = json_decode(@file_get_contents($stateFile), true) ?: [];
+    }
+    $existing['mode'] = $mode;
+    $existing['time'] = time();
+    @file_put_contents($stateFile, json_encode($existing));
 
     try {
         if (isset($driver) && $driver === 'pgsql') {
@@ -251,6 +265,203 @@ function getUserMode($chatId) {
         }
     }
     return 'general';
+}
+
+/**
+ * Set user language preference ('kh' or 'en')
+ */
+function setUserLang($chatId, $lang) {
+    global $pdo, $conn, $driver;
+    if (!isValidChatId($chatId)) return;
+    $lang = (strtolower(trim($lang)) === 'kh') ? 'kh' : 'en';
+    initUserStatesSchema();
+
+    $stateDir = __DIR__ . '/storage/states';
+    if (!is_dir($stateDir)) {
+        @mkdir($stateDir, 0777, true);
+    }
+    $stateFile = "{$stateDir}/{$chatId}.json";
+    $existing = [];
+    if (file_exists($stateFile)) {
+        $existing = json_decode(@file_get_contents($stateFile), true) ?: [];
+    }
+    $existing['lang'] = $lang;
+    $existing['time'] = time();
+    @file_put_contents($stateFile, json_encode($existing));
+
+    try {
+        if (isset($driver) && $driver === 'pgsql') {
+            $stmt = $pdo->prepare("
+                INSERT INTO user_states (customer_chat_id, lang) VALUES (?, ?)
+                ON CONFLICT (customer_chat_id) DO UPDATE SET lang = EXCLUDED.lang
+            ");
+            $stmt->execute([$chatId, $lang]);
+        } elseif ($conn) {
+            $stmt = mysqli_prepare($conn, "INSERT INTO user_states (customer_chat_id, lang) VALUES (?, ?) ON DUPLICATE KEY UPDATE lang = VALUES(lang)");
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, "ss", $chatId, $lang);
+                mysqli_stmt_execute($stmt);
+            }
+        }
+    } catch (Throwable $e) {}
+}
+
+/**
+ * Get user language preference ('kh' or 'en', default 'en')
+ */
+function getUserLang($chatId) {
+    global $pdo, $conn, $driver;
+    if (!isValidChatId($chatId)) return 'en';
+    initUserStatesSchema();
+
+    try {
+        if (isset($driver) && $driver === 'pgsql') {
+            $stmt = $pdo->prepare("SELECT lang FROM user_states WHERE customer_chat_id = ?");
+            $stmt->execute([$chatId]);
+            $lang = $stmt->fetchColumn();
+            if ($lang && in_array($lang, ['kh', 'en'])) return $lang;
+        } elseif ($conn) {
+            $stmt = mysqli_prepare($conn, "SELECT lang FROM user_states WHERE customer_chat_id = ?");
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, "s", $chatId);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                if ($res && $row = mysqli_fetch_assoc($res)) {
+                    if (!empty($row['lang']) && in_array($row['lang'], ['kh', 'en'])) {
+                        return $row['lang'];
+                    }
+                }
+            }
+        }
+    } catch (Throwable $e) {}
+
+    $stateFile = __DIR__ . "/storage/states/{$chatId}.json";
+    if (file_exists($stateFile)) {
+        $data = json_decode(@file_get_contents($stateFile), true);
+        if (!empty($data['lang']) && in_array($data['lang'], ['kh', 'en'])) {
+            return $data['lang'];
+        }
+    }
+    return 'en';
+}
+
+/**
+ * Get localized bot message text
+ */
+function getI18nText($key, $lang = 'en', $params = []) {
+    $translations = [
+        'welcome' => [
+            'en' => "👋 <b>Welcome to Fieldbi Support!</b>\n────────────────────\nFieldbi is a technology & software solutions company.\n\nPlease select an option below or type your message:\n📄 /Submit_CV — Submit your CV / Resume\n💬 /Ask_Question — Ask a Question or Inquiry\n❓ /FAQ — Frequently Asked Questions\n🌐 /lang — Change Language (ភាសា)",
+            'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន Fieldbi!</b>\n────────────────────\nFieldbi គឺជាក្រុមហ៊ុនផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ។\n\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នក៖\n📄 /Submit_CV — ដាក់ពាក្យ / CV\n💬 /Ask_Question — សួរសំណួរ\n❓ /FAQ — សំណួរដែលសួរញឹកញាប់\n🌐 /lang — ផ្លាស់ប្តូរភាសា"
+        ],
+        'submit_cv_prompt' => [
+            'en' => "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>",
+            'kh' => "📄 <b>ដាក់ពាក្យស្នើសុំការងារ (CV / RESUME)</b>\n────────────────────\nសូមបញ្ជូនឯកសារ CV របស់អ្នក (<b>PDF, DOC, DOCX</b>) ឬរូបថត/ព័ត៌មាន CV នៅខាងក្រោម។\n\n⏳ <i>កំពុងរង់ចាំការផ្ញើ CV របស់អ្នក...</i>"
+        ],
+        'ask_question_prompt' => [
+            'en' => "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!",
+            'kh' => "💬 <b>សួរសំណួរ</b>\n────────────────────\nសូមវាយបញ្ចូលសារ ឬសំណួររបស់អ្នកនៅខាងក្រោម ក្រុមការងាររបស់យើងនឹងឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ!"
+        ],
+        'faq_menu' => [
+            'en' => "❓ <b>FREQUENTLY ASKED QUESTIONS</b>\n────────────────────\nPlease select a topic below to get instant answers:",
+            'kh' => "❓ <b>សំណួរដែលសួរញឹកញាប់ (FAQ)</b>\n────────────────────\nសូមជ្រើសរើសប្រធានបទខាងក្រោមដើម្បីទទួលបានចម្លើយភ្លាមៗ៖"
+        ],
+        'faq_jobs' => [
+            'en' => "📋 <b>JOB OPENINGS</b>\n────────────────────\n• <b>Software Engineer</b>\n• <b>Marketing Specialist</b>\n• <b>Sales Representative</b>\n\n📄 <i>Tap /Submit_CV to apply directly!</i>",
+            'kh' => "📋 <b>ឱកាសការងារ</b>\n────────────────────\n• <b>Software Engineer</b>\n• <b>Marketing Specialist</b>\n• <b>Sales Representative</b>\n\n📄 <i>ចុច /Submit_CV ដើម្បីដាក់ពាក្យផ្ទាល់!</i>"
+        ],
+        'faq_location' => [
+            'en' => "📍 <b>OFFICE LOCATION</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\nPhnom Penh, Cambodia\n\n📍 <i>Contact our support team for full office directions.</i>",
+            'kh' => "📍 <b>ទីតាំងការិយាល័យ</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\nរាជធានីភ្នំពេញ, ប្រទេសកម្ពុជា\n\n📍 <i>ទាក់ទងក្រុមការងារដើម្បីទទួលបានព័ត៌មានទីតាំងលម្អិត។</i>"
+        ],
+        'faq_hours' => [
+            'en' => "⏰ <b>WORKING HOURS</b>\n────────────────────\n• <b>Monday – Friday:</b> 8:00 AM – 5:00 PM (ICT)\n• <b>Saturday:</b> 8:00 AM – 12:00 PM\n• <b>Sunday:</b> Closed",
+            'kh' => "⏰ <b>ម៉ោងធ្វើការ</b>\n────────────────────\n• <b>ច័ន្ទ – សុក្រ:</b> 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n• <b>សៅរ៍:</b> 8:00 ព្រឹក – 12:00 ថ្ងៃត្រង់\n• <b>អាទិត្យ:</b> ឈប់សម្រាក"
+        ],
+        'invalid_cv' => [
+            'en' => "⚠️ <b>Invalid CV Format!</b>\n────────────────────\nPlease upload your CV as a valid document (<b>PDF, DOC, DOCX</b>) or image (<b>PNG, JPG</b>).\n\n<i>If you wish to ask a general question instead, tap /Ask_Question.</i>",
+            'kh' => "⚠️ <b>ទម្រង់ CV មិនត្រឹមត្រូវ!</b>\n────────────────────\nសូមផ្ញើ CV ជាឯកសារ (<b>PDF, DOC, DOCX</b>) ឬជារូបថត (<b>PNG, JPG</b>)។\n\n<i>ប្រសិនបើអ្នកចង់សួរសំណួរទូទៅ សូមចុច /Ask_Question</i>"
+        ],
+        'cv_received' => [
+            'en' => "✅ <b>CV Received & Submitted!</b>\n────────────────────\nThank you, <b>{name}</b>! 📄\n\nOur HR & Recruitment team has received your application and CV details. We will review your profile and reach out to you shortly.\n\n💬 <i>If you need to send additional documents or updates, feel free to send them here anytime.</i>",
+            'kh' => "✅ <b>ទទួលបាន CV រួចរាល់ហើយ!</b>\n────────────────────\nសូមអរគុណ <b>{name}</b>! 📄\n\nក្រុមការងារធនធានមនុស្ស (HR) របស់យើងបានទទួល CV របស់អ្នកហើយ។ យើងនឹងពិនិត្យមើល និងទាក់ទងទៅអ្នកវិញក្នុងពេលឆាប់ៗនេះ。\n\n💬 <i>ប្រសិនបើអ្នកចង់ផ្ញើឯកសារបន្ថែម អ្នកអាចផ្ញើនៅទីនេះបានគ្រប់ពេល។</i>"
+        ],
+        'auto_ack_open' => [
+            'en' => "👋 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.",
+            'kh' => "👋 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ Fieldbi!</b>\n────────────────────\nក្រុមការងាររបស់យើងបានទទួលសាររបស់អ្នកហើយ និងកំពុងរៀបចំឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ।"
+        ],
+        'auto_ack_closed' => [
+            'en' => "🌙 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!",
+            'kh' => "🌙 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ Fieldbi!</b>\n────────────────────\nពេលនេះការិយាល័យរបស់យើងត្រូវបានបិទសម្រាក។\n⏰ <b>ម៉ោងធ្វើការ:</b> ច័ន្ទ – សុក្រ, 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n\nសាររបស់អ្នកត្រូវបានកត់ត្រាទុក ហើយក្រុមការងារនឹងឆ្លើយតបភ្លាមៗនៅពេលបើកដំណើរការឡើងវិញ!"
+        ],
+        'lang_prompt' => [
+            'en' => "🌐 <b>SELECT LANGUAGE / ជ្រើសរើសភាសា</b>\n────────────────────\nPlease select your preferred language below:\n• <code>/lang kh</code> — ភាសាខ្មែរ (Khmer)\n• <code>/lang en</code> — English",
+            'kh' => "🌐 <b>ជ្រើសរើសភាសា / SELECT LANGUAGE</b>\n────────────────────\nសូមជ្រើសរើសភាសាដែលអ្នកពេញចិត្ត៖\n• <code>/lang kh</code> — ភាសាខ្មែរ (Khmer)\n• <code>/lang en</code> — English"
+        ],
+        'lang_set_kh' => [
+            'en' => "🇰🇭 <b>បានជ្រើសរើស ភាសាខ្មែរ រួចរាល់ហើយ!</b>\n────────────────────\nឥឡូវនេះ ប្រព័ន្ធនឹងឆ្លើយតបជាភាសាខ្មែរ។\n\nតើមានអ្វីឱ្យយើងខ្ញុំជួយដែរឬទេ?",
+            'kh' => "🇰🇭 <b>បានជ្រើសរើស ភាសាខ្មែរ រួចរាល់ហើយ!</b>\n────────────────────\nឥឡូវនេះ ប្រព័ន្ធនឹងឆ្លើយតបជាភាសាខ្មែរ។\n\nតើមានអ្វីឱ្យយើងខ្ញុំជួយដែរឬទេ?"
+        ],
+        'lang_set_en' => [
+            'en' => "🇬🇧 <b>Language set to English!</b>\n────────────────────\nThe bot will now respond in English.\n\nHow can we help you today?",
+            'kh' => "🇬🇧 <b>Language set to English!</b>\n────────────────────\nThe bot will now respond in English.\n\nHow can we help you today?"
+        ]
+    ];
+
+    $text = $translations[$key][$lang] ?? ($translations[$key]['en'] ?? '');
+    foreach ($params as $paramKey => $paramVal) {
+        $text = str_replace('{' . $paramKey . '}', $paramVal, $text);
+    }
+    return $text;
+}
+
+/**
+ * Get localized inline keyboards
+ */
+function getI18nKeyboard($key, $lang = 'en') {
+    if ($key === 'welcome') {
+        return [
+            'inline_keyboard' => [
+                [
+                    ['text' => ($lang === 'kh' ? '📄 ដាក់ពាក្យ / CV' : '📄 Submit CV'), 'callback_data' => 'menu_submit_cv'],
+                    ['text' => ($lang === 'kh' ? '💬 សួរសំណួរ' : '💬 Ask Question'), 'callback_data' => 'menu_ask_question']
+                ],
+                [
+                    ['text' => ($lang === 'kh' ? '❓ សំណួរដែលសួរញឹកញាប់' : '❓ FAQ / Quick Answers'), 'callback_data' => 'menu_faq']
+                ],
+                [
+                    ['text' => ($lang === 'kh' ? '🌐 ផ្លាស់ប្តូរភាសា (Language)' : '🌐 Change Language / ភាសា'), 'callback_data' => 'menu_lang']
+                ]
+            ]
+        ];
+    }
+
+    if ($key === 'faq_menu') {
+        return [
+            'inline_keyboard' => [
+                [
+                    ['text' => ($lang === 'kh' ? '📋 ឱកាសការងារ' : '📋 Job Openings'), 'callback_data' => 'faq_jobs']
+                ],
+                [
+                    ['text' => ($lang === 'kh' ? '📍 ទីតាំងការិយាល័យ' : '📍 Office Location'), 'callback_data' => 'faq_location'],
+                    ['text' => ($lang === 'kh' ? '⏰ ម៉ោងធ្វើការ' : '⏰ Working Hours'), 'callback_data' => 'faq_hours']
+                ]
+            ]
+        ];
+    }
+
+    if ($key === 'lang_menu') {
+        return [
+            'inline_keyboard' => [
+                [
+                    ['text' => '🇰🇭 ភាសាខ្មែរ (Khmer)', 'callback_data' => 'lang_kh'],
+                    ['text' => '🇬🇧 English', 'callback_data' => 'lang_en']
+                ]
+            ]
+        ];
+    }
+
+    return null;
 }
 
 /**
@@ -570,7 +781,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         } else {
             $contactUrl = "tg://user?id={$chatId}";
             $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
-            $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
+            $contactDisplay = "{$userLink} (KH: <code>{$chatId}</code>)";
         }
 
         $formattedDate = date('d M Y | h:i A');
@@ -814,50 +1025,60 @@ function processSupportBotUpdate($update) {
         }
 
         if ($cbData === 'menu_submit_cv') {
-            answerCallbackQuery($cbId, "📄 Option selected: Submit CV");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'submit_cv');
-            sendMessage($userChatId, "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>");
+            answerCallbackQuery($cbId, $userLang === 'kh' ? "📄 បានជ្រើសរើស: ដាក់ពាក្យ CV" : "📄 Option selected: Submit CV");
+            sendMessage($userChatId, getI18nText('submit_cv_prompt', $userLang));
             return;
         }
 
         if ($cbData === 'menu_ask_question') {
-            answerCallbackQuery($cbId, "💬 Option selected: Ask Question");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'ask_question');
-            sendMessage($userChatId, "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!");
+            answerCallbackQuery($cbId, $userLang === 'kh' ? "💬 បានជ្រើសរើស: សួរសំណួរ" : "💬 Option selected: Ask Question");
+            sendMessage($userChatId, getI18nText('ask_question_prompt', $userLang));
             return;
         }
 
         if (strpos($cbData, 'faq_') === 0 || $cbData === 'menu_faq') {
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $userLang   = getUserLang($userChatId);
             if ($cbData === 'menu_faq') {
-                answerCallbackQuery($cbId, "❓ Frequently Asked Questions");
-                $faqKeyboard = [
-                    'inline_keyboard' => [
-                        [
-                            ['text' => '📋 Job Openings', 'callback_data' => 'faq_jobs']
-                        ],
-                        [
-                            ['text' => '📍 Office Location', 'callback_data' => 'faq_location'],
-                            ['text' => '⏰ Working Hours', 'callback_data' => 'faq_hours']
-                        ]
-                    ]
-                ];
-                sendMessage($userChatId, "❓ <b>FREQUENTLY ASKED QUESTIONS</b>\n────────────────────\nPlease select a topic below to get instant answers:", $faqKeyboard);
+                answerCallbackQuery($cbId, $userLang === 'kh' ? "❓ សំណួរដែលសួរញឹកញាប់" : "❓ Frequently Asked Questions");
+                sendMessage($userChatId, getI18nText('faq_menu', $userLang), getI18nKeyboard('faq_menu', $userLang));
                 return;
             }
 
-            $faqAnswers = [
-                'faq_jobs' => "📋 <b>JOB OPENINGS</b>\n────────────────────\n• <b>Software Engineer</b>\n• <b>Marketing Specialist</b>\n• <b>Sales Representative</b>\n\n📄 <i>Tap /Submit_CV to apply directly!</i>",
-                'faq_location' => "📍 <b>OFFICE LOCATION</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\nPhnom Penh, Cambodia\n\n📍 <i>Contact our support team for full office directions.</i>",
-                'faq_hours' => "⏰ <b>WORKING HOURS</b>\n────────────────────\n• <b>Monday – Friday:</b> 8:00 AM – 5:00 PM (ICT)\n• <b>Saturday:</b> 8:00 AM – 12:00 PM\n• <b>Sunday:</b> Closed"
-            ];
-
-            if (isset($faqAnswers[$cbData])) {
-                answerCallbackQuery($cbId, "Answer loaded");
-                sendMessage($userChatId, $faqAnswers[$cbData]);
+            if (in_array($cbData, ['faq_jobs', 'faq_location', 'faq_hours'])) {
+                answerCallbackQuery($cbId, $userLang === 'kh' ? "បានទាញយកចម្លើយ" : "Answer loaded");
+                sendMessage($userChatId, getI18nText($cbData, $userLang));
             }
+            return;
+        }
+
+        if ($cbData === 'menu_lang') {
+            $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $userLang   = getUserLang($userChatId);
+            answerCallbackQuery($cbId, "🌐 Select Language / ជ្រើសរើសភាសា");
+            sendMessage($userChatId, getI18nText('lang_prompt', $userLang), getI18nKeyboard('lang_menu', $userLang));
+            return;
+        }
+
+        if ($cbData === 'lang_kh') {
+            $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            setUserLang($userChatId, 'kh');
+            answerCallbackQuery($cbId, "🇰🇭 បានជ្រើសរើស ភាសាខ្មែរ!");
+            sendMessage($userChatId, getI18nText('lang_set_kh', 'kh'), getI18nKeyboard('welcome', 'kh'));
+            return;
+        }
+
+        if ($cbData === 'lang_en') {
+            $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            setUserLang($userChatId, 'en');
+            answerCallbackQuery($cbId, "🇬🇧 Language set to English!");
+            sendMessage($userChatId, getI18nText('lang_set_en', 'en'), getI18nKeyboard('welcome', 'en'));
             return;
         }
 
@@ -1149,6 +1370,36 @@ function processSupportBotUpdate($update) {
     // D. PRIVATE CHAT WORKFLOW
     // ========================================================
     if ($chatType === 'private') {
+        // Multi-Language Command & Trigger Handling
+        if ($text === '/lang kh' || $text === '/kh') {
+            setUserLang($chatId, 'kh');
+            sendMessage($chatId, getI18nText('lang_set_kh', 'kh'), getI18nKeyboard('welcome', 'kh'));
+            return;
+        }
+
+        if ($text === '/lang en' || $text === '/en') {
+            setUserLang($chatId, 'en');
+            sendMessage($chatId, getI18nText('lang_set_en', 'en'), getI18nKeyboard('welcome', 'en'));
+            return;
+        }
+
+        if (preg_match('/^\/(lang|language)(?:@\w+)?(?:\s+(kh|en))?/i', $text, $matches)) {
+            $selectedLang = strtolower($matches[2] ?? '');
+            if ($selectedLang === 'kh') {
+                setUserLang($chatId, 'kh');
+                sendMessage($chatId, getI18nText('lang_set_kh', 'kh'), getI18nKeyboard('welcome', 'kh'));
+                return;
+            } elseif ($selectedLang === 'en') {
+                setUserLang($chatId, 'en');
+                sendMessage($chatId, getI18nText('lang_set_en', 'en'), getI18nKeyboard('welcome', 'en'));
+                return;
+            } else {
+                $userLang = getUserLang($chatId);
+                sendMessage($chatId, getI18nText('lang_prompt', $userLang), getI18nKeyboard('lang_menu', $userLang));
+                return;
+            }
+        }
+
         if (strpos($text, '/start') === 0) {
             $firstName = trim($message["chat"]["first_name"] ?? '');
             $lastName  = trim($message["chat"]["last_name"] ?? '');
@@ -1176,58 +1427,28 @@ function processSupportBotUpdate($update) {
                 mysqli_stmt_execute($bufStmt);
             }
 
-            $welcomeText = "👋 <b>Welcome to Fieldbi Support!</b>\n"
-                         . "────────────────────\n"
-                         . "Fieldbi is a technology & software solutions company.\n\n"
-                         . "Please select an option below or type your message:\n"
-                         . "📄 /Submit_CV — Submit your CV / Resume\n"
-                         . "💬 /Ask_Question — Ask a Question or Inquiry\n"
-                         . "❓ /FAQ — Frequently Asked Questions";
-
-            $welcomeKeyboard = [
-                'inline_keyboard' => [
-                    [
-                        ['text' => '📄 Submit CV', 'callback_data' => 'menu_submit_cv'],
-                        ['text' => '💬 Ask Question', 'callback_data' => 'menu_ask_question']
-                    ],
-                    [
-                        ['text' => '❓ FAQ / Quick Answers', 'callback_data' => 'menu_faq']
-                    ]
-                ]
-            ];
-
-            sendMessage($chatId, $welcomeText, $welcomeKeyboard);
+            $userLang = getUserLang($chatId);
+            sendMessage($chatId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
             return;
         }
 
         if (preg_match('/^\/(submit_cv|submitcv|cv)(?:@\w+)?/i', $text)) {
             setUserMode($chatId, 'submit_cv');
-            $msgText = "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>";
-            sendMessage($chatId, $msgText);
+            $userLang = getUserLang($chatId);
+            sendMessage($chatId, getI18nText('submit_cv_prompt', $userLang));
             return;
         }
 
         if (preg_match('/^\/(ask_question|askquestion|ask)(?:@\w+)?/i', $text)) {
             setUserMode($chatId, 'ask_question');
-            $msgText = "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!";
-            sendMessage($chatId, $msgText);
+            $userLang = getUserLang($chatId);
+            sendMessage($chatId, getI18nText('ask_question_prompt', $userLang));
             return;
         }
 
         if (preg_match('/^\/(faq|help)(?:@\w+)?/i', $text)) {
-            $faqKeyboard = [
-                'inline_keyboard' => [
-                    [
-                        ['text' => '📋 Job Openings', 'callback_data' => 'faq_jobs']
-                    ],
-                    [
-                        ['text' => '📍 Office Location', 'callback_data' => 'faq_location'],
-                        ['text' => '⏰ Working Hours', 'callback_data' => 'faq_hours']
-                    ]
-                ]
-            ];
-            $faqMsg = "❓ <b>FREQUENTLY ASKED QUESTIONS</b>\n────────────────────\nPlease select a topic below to get instant answers:";
-            sendMessage($chatId, $faqMsg, $faqKeyboard);
+            $userLang = getUserLang($chatId);
+            sendMessage($chatId, getI18nText('faq_menu', $userLang), getI18nKeyboard('faq_menu', $userLang));
             return;
         }
 
@@ -1258,11 +1479,12 @@ function processSupportBotUpdate($update) {
             }
 
             $currentMode = getUserMode($chatId);
+            $userLang    = getUserLang($chatId);
             $isCvMessage = 0;
 
             if ($currentMode === 'submit_cv') {
                 if (!isValidCvSubmission($message)) {
-                    sendMessage($chatId, "⚠️ <b>Invalid CV Format!</b>\n────────────────────\nPlease upload your CV as a valid document (<b>PDF, DOC, DOCX</b>) or image (<b>PNG, JPG</b>).\n\n<i>If you wish to ask a general question instead, tap /Ask_Question.</i>");
+                    sendMessage($chatId, getI18nText('invalid_cv', $userLang));
                     return;
                 }
                 $isCvMessage = 1;
@@ -1317,15 +1539,15 @@ function processSupportBotUpdate($update) {
             }
 
             if ($isCvMessage) {
-                sendMessage($chatId, "✅ <b>CV Received & Submitted!</b>\n────────────────────\nThank you, <b>" . htmlspecialchars($customerName) . "</b>! 📄\n\nOur HR & Recruitment team has received your application and CV details. We will review your profile and reach out to you shortly.\n\n💬 <i>If you need to send additional documents or updates, feel free to send them here anytime.</i>");
+                sendMessage($chatId, getI18nText('cv_received', $userLang, ['name' => htmlspecialchars($customerName)]));
             } else {
 
                 // Send auto-acknowledgment ONLY once per 15-minute conversation window
                 if (!$recentlyContacted) {
                     if (isBusinessOpen()) {
-                        sendMessage($chatId, "👋 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.");
+                        sendMessage($chatId, getI18nText('auto_ack_open', $userLang));
                     } else {
-                        sendMessage($chatId, "🌙 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!");
+                        sendMessage($chatId, getI18nText('auto_ack_closed', $userLang));
                     }
                 }
             }

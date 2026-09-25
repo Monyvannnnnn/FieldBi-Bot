@@ -8,6 +8,7 @@ render.yaml
 # Logs and databases
 *.log
 logs/
+storage/
 *.sqlite
 
 # Dependency directories

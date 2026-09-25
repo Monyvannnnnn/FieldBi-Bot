@@ -38,8 +38,16 @@ CREATE TABLE IF NOT EXISTS pending_customer_messages (
     message_text TEXT,
     photo_file_id VARCHAR(255),
     doc_file_id VARCHAR(255),
+    is_cv TINYINT(1) DEFAULT 0,
     processed TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS user_states (
+    customer_chat_id VARCHAR(50) PRIMARY KEY,
+    current_mode VARCHAR(50) DEFAULT 'general',
+    lang VARCHAR(10) DEFAULT 'en',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
