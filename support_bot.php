@@ -1070,125 +1070,132 @@ function processSupportBotUpdate($update) {
         }
 
         if (strpos($cbData, 'hr_') === 0) {
-            $parts  = explode('_', $cbData);
-            $action = $parts[1] ?? '';
-            $convId = (int)($parts[2] ?? 0);
+            try {
+                $parts  = explode('_', $cbData);
+                $action = $parts[1] ?? '';
+                $convId = (int)($parts[2] ?? 0);
 
-            $convData = null;
-            if (isset($driver) && $driver === 'pgsql') {
-                $stmt = $pdo->prepare("SELECT id, customer_chat_id, customer_name, username, assigned_agent FROM conversations WHERE id = ?");
-                $stmt->execute([$convId]);
-                $convData = $stmt->fetch(PDO::FETCH_ASSOC);
-            } else {
-                $stmt = mysqli_prepare($conn, "SELECT id, customer_chat_id, customer_name, username, assigned_agent FROM conversations WHERE id = ?");
-                mysqli_stmt_bind_param($stmt, "i", $convId);
-                mysqli_stmt_execute($stmt);
-                $convData = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
-            }
-
-            if (!$convData) {
-                answerCallbackQuery($cbId, "⚠️ HR Ticket #{$convId} not found!", true);
-                return;
-            }
-
-            $customerName   = $convData['customer_name'] ?? 'Candidate';
-            $customerChatId = $convData['customer_chat_id'] ?? '';
-            $username       = trim($convData['username'] ?? '');
-            $userLang       = getUserLang($customerChatId);
-
-            $cleanCustName = $customerName;
-            if (preg_match('/^(.*?)\s*(\(@[a-zA-Z0-9_]+\))$/', $customerName, $matches)) {
-                $cleanCustName = trim($matches[1]);
-            }
-
-            if (!empty($username)) {
-                $cleanUsername = ltrim(trim($username), '@');
-                $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
-                $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
-                $contactDisplay = "{$userLink} (<code>@{$cleanUsername}</code>)";
-            } else {
-                $contactUrl = "tg://user?id={$customerChatId}";
-                $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
-                $contactDisplay = "{$userLink} (ID: <code>{$customerChatId}</code>)";
-            }
-
-            $statusText    = '';
-            $statusBadge   = '';
-            $toastMsg      = '';
-            $custNotifyMsg = '';
-
-            if ($action === 'interview' || $action === 'shortlist') {
-                $statusText    = 'shortlisted_interview';
-                $statusBadge   = "⭐ <b>Status:</b> <b>SHORTLISTED & INTERVIEW SENT</b> by <i>" . htmlspecialchars($agentName) . "</i>";
-                $toastMsg      = "⭐ Candidate Shortlisted & Interview Sent!";
-
-                $custNotifyMsg = "📩 <b>INTERVIEW INVITATION</b>\n────────────────────\nDear <b>" . htmlspecialchars($cleanCustName) . "</b>,\n\nWe're pleased to inform you that you have successfully passed our shortlist stage. We would like to invite you to attend an interview as scheduled below:\n\n📅 <b>Date:</b> Wednesday 12 August 2026\n⏰ <b>Time:</b> 10am\n📍 <b>Location:</b> 6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia\n\nPlease kindly confirm your availability for the scheduled time. We look forward to meeting you!";
-            } elseif ($action === 'decline') {
-                $statusText  = 'declined';
-                $statusBadge = "❌ <b>Status:</b> <b>DECLINED</b> by <i>" . htmlspecialchars($agentName) . "</i>";
-                $toastMsg    = "❌ Candidate Application Declined";
-            }
-
-            // Update DB status and assigned agent (Parameterized Query)
-            if (isset($driver) && $driver === 'pgsql') {
-                $upStmt = $pdo->prepare("UPDATE conversations SET status = ?, assigned_agent = ?, assigned_agent_id = ? WHERE id = ?");
-                $upStmt->execute([$statusText, $agentName, $agentId, $convId]);
-            } else {
-                $upStmt = mysqli_prepare($conn, "UPDATE conversations SET status = ?, assigned_agent = ?, assigned_agent_id = ? WHERE id = ?");
-                mysqli_stmt_bind_param($upStmt, "sssi", $statusText, $agentName, $agentId, $convId);
-                mysqli_stmt_execute($upStmt);
-            }
-
-            // Send notification message to candidate if applicable
-            if (!empty($custNotifyMsg) && isValidChatId($customerChatId)) {
-                sendMessage($customerChatId, $custNotifyMsg);
-            }
-
-            // Edit Telegram Group message text / caption
-            if (isset($cb["message"])) {
-                $msg        = $cb["message"];
-                $gChatId    = (string)($msg["chat"]["id"] ?? '');
-                $gMsgId     = $msg["message_id"];
-                $rawMsgText = $msg["text"] ?? ($msg["caption"] ?? '');
-
-                $messageContent = '';
-                if (preg_match('/💬 <b>(Message|Details):<\/b>\s*\n(?:<blockquote>|<i>[“"«]?)?(.*?)(?:<\/blockquote>|[”"»]?<\/i>)?(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
-                    $messageContent = trim($matches[2]);
-                } elseif (preg_match('/(Message|Details):\s*\n(.*?)(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
-                    $messageContent = trim($matches[2]);
-                }
-
-                $actionDate = date('d M Y | h:i A');
-                $updatedCard = "📄 <b>HR RECRUITMENT TICKET #{$convId}</b>\n"
-                             . "──────────────\n"
-                             . "👤 <b>Candidate:</b> {$contactDisplay}\n"
-                             . (!empty($messageContent) ? "💬 <b>Details:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "")
-                             . "──────────────\n"
-                             . "📅 <b>Date:</b> {$actionDate}\n"
-                             . "{$statusBadge}\n"
-                             . "──────────────\n"
-                             . "💬 <i>Processed by HR Agent " . htmlspecialchars($agentName) . ".</i>";
-
-                $updatedBtn = [
-                    'inline_keyboard' => [
-                        [
-                            ['text' => '📄 Contact Candidate', 'url' => $contactUrl],
-                            ['text' => ($action === 'decline' ? '❌ Declined' : '⭐ Interview Invited'), 'callback_data' => 'claimed']
-                        ],
-                        [
-                            ['text' => ($action === 'decline' ? '❌ Declined' : '⭐ Shortlist & Interview'), 'callback_data' => "hr_interview_{$convId}"]
-                        ]
-                    ]
-                ];
-
-                if (isset($msg["caption"])) {
-                    editMessageCaption($gChatId, $gMsgId, $updatedCard, $updatedBtn);
+                $convData = null;
+                if (isset($driver) && $driver === 'pgsql') {
+                    $stmt = $pdo->prepare("SELECT id, customer_chat_id, customer_name, username, assigned_agent FROM conversations WHERE id = ?");
+                    $stmt->execute([$convId]);
+                    $convData = $stmt->fetch(PDO::FETCH_ASSOC);
                 } else {
-                    editMessageText($gChatId, $gMsgId, $updatedCard, $updatedBtn);
+                    $stmt = mysqli_prepare($conn, "SELECT id, customer_chat_id, customer_name, username, assigned_agent FROM conversations WHERE id = ?");
+                    mysqli_stmt_bind_param($stmt, "i", $convId);
+                    mysqli_stmt_execute($stmt);
+                    $convData = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
                 }
-            }
 
-            answerCallbackQuery($cbId, $toastMsg, false);
+                if (!$convData) {
+                    answerCallbackQuery($cbId, "⚠️ HR Ticket #{$convId} not found!", true);
+                    return;
+                }
+
+                $customerName   = $convData['customer_name'] ?? 'Candidate';
+                $customerChatId = $convData['customer_chat_id'] ?? '';
+                $username       = trim($convData['username'] ?? '');
+
+                $cleanCustName = $customerName;
+                if (preg_match('/^(.*?)\s*(\(@[a-zA-Z0-9_]+\))$/', $customerName, $matches)) {
+                    $cleanCustName = trim($matches[1]);
+                }
+
+                if (!empty($username)) {
+                    $cleanUsername = ltrim(trim($username), '@');
+                    $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
+                    $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
+                    $contactDisplay = "{$userLink} (<code>@{$cleanUsername}</code>)";
+                } else {
+                    $contactUrl = "tg://user?id={$customerChatId}";
+                    $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
+                    $contactDisplay = "{$userLink} (ID: <code>{$customerChatId}</code>)";
+                }
+
+                $statusText    = '';
+                $statusBadge   = '';
+                $toastMsg      = '';
+                $custNotifyMsg = '';
+
+                if ($action === 'interview' || $action === 'shortlist') {
+                    $statusText    = 'shortlisted';
+                    $statusBadge   = "⭐ <b>Status:</b> <b>SHORTLISTED & INTERVIEW SENT</b> by <i>" . htmlspecialchars($agentName) . "</i>";
+                    $toastMsg      = "⭐ Candidate Shortlisted & Interview Sent!";
+
+                    $displayGreeting = (!empty($cleanCustName) && $cleanCustName !== 'Candidate') ? "Dear <b>" . htmlspecialchars($cleanCustName) . "</b>," : "Dear <b>Mr. Chhourn Crymonyvann</b>,";
+
+                    $custNotifyMsg = "{$displayGreeting}\n\nWe're pleased to inform you that you have successfully passed our shortlist stage. We would like to invite you to attend an interview as scheduled below:\n\n📅 <b>Date:</b> Wednesday 12 August 2026\n⏰ <b>Time:</b> 10am\n📍 <b>Location:</b> 6F C7, Olympia City, Sangkat Veal Vong, Khan  7 Makara, Phnom Penh, Cambodia\n\nplease kindly confirm your availability for the scheduled time. We look forward to meeting you.";
+                } elseif ($action === 'decline') {
+                    $statusText  = 'declined';
+                    $statusBadge = "❌ <b>Status:</b> <b>DECLINED</b> by <i>" . htmlspecialchars($agentName) . "</i>";
+                    $toastMsg    = "❌ Candidate Application Declined";
+                }
+
+                // Update DB status and assigned agent (Parameterized Query)
+                try {
+                    if (isset($driver) && $driver === 'pgsql') {
+                        $upStmt = $pdo->prepare("UPDATE conversations SET status = ?, assigned_agent = ?, assigned_agent_id = ? WHERE id = ?");
+                        $upStmt->execute([$statusText, $agentName, $agentId, $convId]);
+                    } else {
+                        $upStmt = mysqli_prepare($conn, "UPDATE conversations SET status = ?, assigned_agent = ?, assigned_agent_id = ? WHERE id = ?");
+                        mysqli_stmt_bind_param($upStmt, "sssi", $statusText, $agentName, $agentId, $convId);
+                        mysqli_stmt_execute($upStmt);
+                    }
+                } catch (Throwable $dbErr) {
+                    error_log("DB update error in HR callback: " . $dbErr->getMessage());
+                }
+
+                // Send notification message to candidate if applicable
+                if (!empty($custNotifyMsg) && isValidChatId($customerChatId)) {
+                    sendMessage($customerChatId, $custNotifyMsg);
+                }
+
+                // Edit Telegram Group message text / caption
+                if (isset($cb["message"])) {
+                    $msg        = $cb["message"];
+                    $gChatId    = (string)($msg["chat"]["id"] ?? '');
+                    $gMsgId     = $msg["message_id"];
+                    $rawMsgText = $msg["text"] ?? ($msg["caption"] ?? '');
+
+                    $messageContent = '';
+                    if (preg_match('/💬 <b>(Message|Details):<\/b>\s*\n(?:<blockquote>|<i>[“"«]?)?(.*?)(?:<\/blockquote>|[”"»]?<\/i>)?(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
+                        $messageContent = trim($matches[2]);
+                    } elseif (preg_match('/(Message|Details):\s*\n(.*?)(?=\n─|\n━|$)/s', $rawMsgText, $matches)) {
+                        $messageContent = trim($matches[2]);
+                    }
+
+                    $actionDate = date('d M Y | h:i A');
+                    $updatedCard = "📄 <b>HR RECRUITMENT TICKET #{$convId}</b>\n"
+                                 . "──────────────\n"
+                                 . "👤 <b>Candidate:</b> {$contactDisplay}\n"
+                                 . (!empty($messageContent) ? "💬 <b>Details:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "")
+                                 . "──────────────\n"
+                                 . "📅 <b>Date:</b> {$actionDate}\n"
+                                 . "{$statusBadge}\n"
+                                 . "──────────────\n"
+                                 . "💬 <i>Processed by HR Agent " . htmlspecialchars($agentName) . ".</i>";
+
+                    $updatedBtn = [
+                        'inline_keyboard' => [
+                            [
+                                ['text' => '📄 Contact Candidate', 'url' => $contactUrl],
+                                ['text' => ($action === 'decline' ? '❌ Declined' : '✅ Interview Invited'), 'callback_data' => 'claimed']
+                            ]
+                        ]
+                    ];
+
+                    if (isset($msg["caption"])) {
+                        editMessageCaption($gChatId, $gMsgId, $updatedCard, $updatedBtn);
+                    } else {
+                        editMessageText($gChatId, $gMsgId, $updatedCard, $updatedBtn);
+                    }
+                }
+
+                answerCallbackQuery($cbId, $toastMsg, false);
+            } catch (Throwable $e) {
+                error_log("HR callback exception: " . $e->getMessage());
+                answerCallbackQuery($cbId, "⚠️ Error processing HR request: " . $e->getMessage(), true);
+            }
             return;
         }
 
