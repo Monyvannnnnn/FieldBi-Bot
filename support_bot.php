@@ -399,8 +399,8 @@ function getI18nText($key, $lang = 'en', $params = []) {
             'kh' => "📄 <b>ដាក់ពាក្យស្នើសុំការងារ (CV / RESUME)</b>\n────────────────────\nសូមបញ្ជូនឯកសារ CV របស់អ្នក (<b>PDF, DOC, DOCX</b>) ឬរូបថត/ព័ត៌មាន CV នៅខាងក្រោម។\n\n⏳ <i>កំពុងរង់ចាំការផ្ញើ CV របស់អ្នក...</i>"
         ],
         'ask_question_prompt' => [
-            'en' => "💬 <b>ASK A QUESTION</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!",
-            'kh' => "💬 <b>សួរសំណួរ</b>\n────────────────────\nសូមវាយបញ្ចូលសារ ឬសំណួររបស់អ្នកនៅខាងក្រោម ក្រុមការងាររបស់យើងនឹងឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ!"
+            'en' => "💬 <b>ASK A QUESTION / HUMAN SUPPORT</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!\n\n👤 <i>Or tap the button below to connect directly with our Human Support team.</i>",
+            'kh' => "💬 <b>សួរសំណួរ / ទាក់ទងក្រុមការងារ</b>\n────────────────────\nសូមវាយបញ្ចូលសារ ឬសំណួររបស់អ្នកនៅខាងក្រោម ក្រុមការងាររបស់យើងនឹងឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ!\n\n👤 <i>ឬចុចប៊ូតុងខាងក្រោមដើម្បីទាក់ទងផ្ទាល់ជាមួយក្រុមការងារ Human Support។</i>"
         ],
         'faq_menu' => [
             'en' => "❓ <b>FREQUENTLY ASKED QUESTIONS</b>\n────────────────────\nPlease select a topic below to get instant answers:",
@@ -486,6 +486,17 @@ function getI18nKeyboard($key, $lang = 'en') {
                 [
                     ['text' => ($lang === 'kh' ? '📍 ទីតាំងការិយាល័យ' : '📍 Office Location'), 'url' => $mapUrl],
                     ['text' => ($lang === 'kh' ? '⏰ ម៉ោងធ្វើការ' : '⏰ Working Hours'), 'callback_data' => 'faq_hours']
+                ]
+            ]
+        ];
+    }
+
+    if ($key === 'ask_question') {
+        $contactUrl = getenv('COMPANY_TELEGRAM_LINK') ?: ($_ENV['COMPANY_TELEGRAM_LINK'] ?? 'https://t.me/FieldBiSupport');
+        return [
+            'inline_keyboard' => [
+                [
+                    ['text' => ($lang === 'kh' ? '👤 ទាក់ទង Human Support ផ្ទាល់' : '👤 Contact Our Human Support'), 'url' => $contactUrl]
                 ]
             ]
         ];
@@ -1482,7 +1493,7 @@ function processSupportBotUpdate($update) {
             $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'ask_question');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "💬 បានជ្រើសរើស: សួរសំណួរ" : "💬 Option selected: Ask Question");
-            sendMessage($userChatId, getI18nText('ask_question_prompt', $userLang));
+            sendMessage($userChatId, getI18nText('ask_question_prompt', $userLang), getI18nKeyboard('ask_question', $userLang));
             return;
         }
 
@@ -1992,7 +2003,7 @@ function processSupportBotUpdate($update) {
         if (preg_match('/^\/(ask_question|askquestion|ask)(?:@\w+)?/i', $text)) {
             setUserMode($chatId, 'ask_question');
             $userLang = getUserLang($chatId);
-            sendMessage($chatId, getI18nText('ask_question_prompt', $userLang));
+            sendMessage($chatId, getI18nText('ask_question_prompt', $userLang), getI18nKeyboard('ask_question', $userLang));
             return;
         }
 
