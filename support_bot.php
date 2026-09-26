@@ -407,8 +407,8 @@ function getI18nText($key, $lang = 'en', $params = []) {
             'kh' => "❓ <b>សំណួរដែលសួរញឹកញាប់ (FAQ)</b>\n────────────────────\nសូមជ្រើសរើសប្រធានបទខាងក្រោមដើម្បីទទួលបានចម្លើយភ្លាមៗ៖"
         ],
         'faq_jobs' => [
-            'en' => "📋 <b>JOB OPENINGS</b>\n────────────────────\n• <b>Software Engineer</b>\n• <b>Marketing Specialist</b>\n• <b>Sales Representative</b>\n\n📄 <i>Tap /Submit_CV to apply directly!</i>",
-            'kh' => "📋 <b>ឱកាសការងារ</b>\n────────────────────\n• <b>Software Engineer</b>\n• <b>Marketing Specialist</b>\n• <b>Sales Representative</b>\n\n📄 <i>ចុច /Submit_CV ដើម្បីដាក់ពាក្យផ្ទាល់!</i>"
+            'en' => "📋 <b>JOB OPENINGS</b>\n────────────────────\n• <b>Developer</b>\n• <b>Sales Representative</b>\n• <b>Marketing Officer</b>\n\n📄 <i>Tap /Submit_CV to apply directly!</i>",
+            'kh' => "📋 <b>ឱកាសការងារ</b>\n────────────────────\n• <b>Developer</b>\n• <b>Sales Representative</b>\n• <b>Marketing Officer</b>\n\n📄 <i>ចុច /Submit_CV ដើម្បីដាក់ពាក្យផ្ទាល់!</i>"
         ],
         'faq_location' => [
             'en' => "📍 <b>OFFICE LOCATION</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\n📍 6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">Open Location on Map</a>",
