@@ -391,8 +391,8 @@ function getUserLang($chatId) {
 function getI18nText($key, $lang = 'en', $params = []) {
     $translations = [
         'welcome' => [
-            'en' => "👋 <b>Welcome to FieldBi Cambodia Support!</b>\n────────────────────────\n✨ <i>Technology & Software Solutions Provider</i>\n\n<b>How can we assist you today?</b>\nPlease select an option below or type your message directly:\n\n────────────────────────\n💡 <i>Tip: You can change language anytime using the button below.</i>",
-            'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន FieldBi Cambodia!</b>\n────────────────────────\n✨ <i>ដៃគូផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ</i>\n\n<b>តើយើងអាចជួយអ្វីអ្នកបាននៅថ្ងៃនេះ?</b>\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នកផ្ទាល់៖\n\n────────────────────────\n💡 <i>ចំណាំ៖ អ្នកអាចផ្លាស់ប្តូរភាសាបានគ្រប់ពេលតាមរយៈប៊ូតុងខាងក្រោម។</i>"
+            'en' => "👋 <b>Welcome to FieldBi Cambodia Support!</b>\n✨ <i>Technology & Software Solutions Provider</i>\n\n<b>How can we assist you today?</b>\nPlease select an option below or type your message directly:\n\n💡 <i>Tip: You can change language anytime using the button below.</i>",
+            'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន FieldBi Cambodia!</b>\n✨ <i>ដៃគូផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ</i>\n\n<b>តើយើងអាចជួយអ្វីអ្នកបាននៅថ្ងៃនេះ?</b>\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នកផ្ទាល់៖\n\n💡 <i>ចំណាំ៖ អ្នកអាចផ្លាស់ប្តូរភាសាបានគ្រប់ពេលតាមរយៈប៊ូតុងខាងក្រោម។</i>"
         ],
         'submit_cv_prompt' => [
             'en' => "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>",
