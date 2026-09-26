@@ -391,7 +391,7 @@ function getUserLang($chatId) {
 function getI18nText($key, $lang = 'en', $params = []) {
     $translations = [
         'welcome' => [
-            'en' => "👋 <b>Welcome to FieldBi Support!</b>\n────────────────────\nFieldBi is a technology & software solutions company.\n\nPlease select an option below or type your message:\n📄 /Submit_CV — Submit your CV / Resume\n💬 /Ask_Question — Ask a Question or Inquiry\n❓ /FAQ — Frequently Asked Questions\n🌐 /lang — Change Language (ភាសា)",
+            'en' => "👋 <b>Welcome to FieldBi Cambodia Support!</b>\n────────────────────\nFieldBi is a technology & software solutions company.\n\nPlease select an option below or type your message:\n📄 /Submit_CV — Submit your CV / Resume\n💬 /Ask_Question — Ask a Question or Inquiry\n❓ /FAQ — Frequently Asked Questions\n🌐 /lang — Change Language (ភាសា)",
             'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន FieldBi!</b>\n────────────────────\nFieldBi គឺជាក្រុមហ៊ុនផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ។\n\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នក៖\n📄 /Submit_CV — ដាក់ពាក្យ / CV\n💬 /Ask_Question — សួរសំណួរ\n❓ /FAQ — សំណួរដែលសួរញឹកញាប់\n🌐 /lang — ផ្លាស់ប្តូរភាសា"
         ],
         'submit_cv_prompt' => [
