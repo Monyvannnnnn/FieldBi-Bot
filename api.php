@@ -107,6 +107,11 @@ function getBotAnalyticsData() {
 
 // GET Request: Serve HTML Web Dashboard or JSON API
 if ($requestMethod === 'GET') {
+    if (isset($_GET['view']) && $_GET['view'] === 'workflow') {
+        require_once __DIR__ . '/workflow.php';
+        exit;
+    }
+
     $wantsJson = (isset($_GET['format']) && $_GET['format'] === 'json')
               || (isset($_GET['json']) && $_GET['json'] === '1')
               || (strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false);
@@ -606,8 +611,9 @@ if ($requestMethod === 'GET') {
                 Server Online & Running
             </div>
             <div class="header-actions">
+                <a class="btn btn-primary" href="workflow.php">🔄 Supply Chain Workflow</a>
                 <button class="btn" onclick="location.reload()">🔄 Refresh</button>
-                <a class="btn btn-primary" href="?format=json" target="_blank">📄 Raw JSON API</a>
+                <a class="btn" href="?format=json" target="_blank">📄 Raw JSON API</a>
             </div>
         </header>
 
