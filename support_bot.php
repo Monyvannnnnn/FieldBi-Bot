@@ -65,7 +65,7 @@ function updateBotProfileInfo() {
     $botToken = BOT_TOKEN;
     if (empty($botToken)) return;
 
-    $descText = "👋 Welcome to FieldBi Cambodia Support!\n\nFieldbi is a technology & software solutions company specializing in digital platforms and software engineering.\n\n💬 Send us your message, question, or job application details below, and our support team will assist you shortly.";
+    $descText = "👋 Welcome to FieldBi Cambodia Support!\n\nFieldBi is a technology & software solutions company specializing in digital platforms and software engineering.\n\n💬 Send us your message, question, or job application details below, and our support team will assist you shortly.";
 
     $endpoints = [
         "https://api.telegram.org/bot{$botToken}/setMyName" => ['name' => 'FieldBi Cambodia Support'],
@@ -391,8 +391,8 @@ function getUserLang($chatId) {
 function getI18nText($key, $lang = 'en', $params = []) {
     $translations = [
         'welcome' => [
-            'en' => "👋 <b>Welcome to Fieldbi Support!</b>\n────────────────────\nFieldbi is a technology & software solutions company.\n\nPlease select an option below or type your message:\n📄 /Submit_CV — Submit your CV / Resume\n💬 /Ask_Question — Ask a Question or Inquiry\n❓ /FAQ — Frequently Asked Questions\n🌐 /lang — Change Language (ភាសា)",
-            'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន Fieldbi!</b>\n────────────────────\nFieldbi គឺជាក្រុមហ៊ុនផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ។\n\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នក៖\n📄 /Submit_CV — ដាក់ពាក្យ / CV\n💬 /Ask_Question — សួរសំណួរ\n❓ /FAQ — សំណួរដែលសួរញឹកញាប់\n🌐 /lang — ផ្លាស់ប្តូរភាសា"
+            'en' => "👋 <b>Welcome to FieldBi Support!</b>\n────────────────────\nFieldBi is a technology & software solutions company.\n\nPlease select an option below or type your message:\n📄 /Submit_CV — Submit your CV / Resume\n💬 /Ask_Question — Ask a Question or Inquiry\n❓ /FAQ — Frequently Asked Questions\n🌐 /lang — Change Language (ភាសា)",
+            'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន FieldBi!</b>\n────────────────────\nFieldBi គឺជាក្រុមហ៊ុនផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ។\n\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នក៖\n📄 /Submit_CV — ដាក់ពាក្យ / CV\n💬 /Ask_Question — សួរសំណួរ\n❓ /FAQ — សំណួរដែលសួរញឹកញាប់\n🌐 /lang — ផ្លាស់ប្តូរភាសា"
         ],
         'submit_cv_prompt' => [
             'en' => "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>",
@@ -411,8 +411,8 @@ function getI18nText($key, $lang = 'en', $params = []) {
             'kh' => "📋 <b>ឱកាសការងារ</b>\n────────────────────\n• <b>Developer</b>\n• <b>Sales Representative</b>\n• <b>Marketing Officer</b>\n\n📄 <i>ចុច /Submit_CV ដើម្បីដាក់ពាក្យផ្ទាល់!</i>"
         ],
         'faq_location' => [
-            'en' => "📍 <b>OFFICE LOCATION</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\n📍 6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">Open Location on Map</a>",
-            'kh' => "📍 <b>ទីតាំងការិយាល័យ</b>\n────────────────────\n🏢 <b>Fieldbi Cambodia</b>\n📍 អគារ C7 ជាន់ទី 6, Olympia City, សង្កាត់វាលវង់, ខណ្ឌ 7 មករា, ភ្នំពេញ\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">ចុចទីនេះដើម្បីមើលលើផែនទី (Google Maps)</a>"
+            'en' => "📍 <b>OFFICE LOCATION</b>\n────────────────────\n🏢 <b>FieldBi Cambodia</b>\n📍 6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">Open Location on Map</a>",
+            'kh' => "📍 <b>ទីតាំងការិយាល័យ</b>\n────────────────────\n🏢 <b>FieldBi Cambodia</b>\n📍 អគារ C7 ជាន់ទី 6, Olympia City, សង្កាត់វាលវង់, ខណ្ឌ 7 មករា, ភ្នំពេញ\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">ចុចទីនេះដើម្បីមើលលើផែនទី (Google Maps)</a>"
         ],
         'faq_hours' => [
             'en' => "⏰ <b>WORKING HOURS</b>\n────────────────────\n• <b>Monday – Friday:</b> 8:00 AM – 5:00 PM (ICT)\n• <b>Saturday:</b> 8:00 AM – 12:00 PM\n• <b>Sunday:</b> Closed",
@@ -427,12 +427,12 @@ function getI18nText($key, $lang = 'en', $params = []) {
             'kh' => "✅ <b>ទទួលបាន CV រួចរាល់ហើយ!</b>\n────────────────────\nសូមអរគុណ <b>{name}</b>! 📄\n\nក្រុមការងារធនធានមនុស្ស (HR) របស់យើងបានទទួល CV របស់អ្នកហើយ។ យើងនឹងពិនិត្យមើល និងទាក់ទងទៅអ្នកវិញក្នុងពេលឆាប់ៗនេះ。\n\n💬 <i>ប្រសិនបើអ្នកចង់ផ្ញើឯកសារបន្ថែម អ្នកអាចផ្ញើនៅទីនេះបានគ្រប់ពេល។</i>"
         ],
         'auto_ack_open' => [
-            'en' => "👋 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.",
-            'kh' => "👋 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ Fieldbi!</b>\n────────────────────\nក្រុមការងាររបស់យើងបានទទួលសាររបស់អ្នកហើយ និងកំពុងរៀបចំឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ।"
+            'en' => "👋 <b>Thank you for contacting FieldBi!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.",
+            'kh' => "👋 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ FieldBi!</b>\n────────────────────\nក្រុមការងាររបស់យើងបានទទួលសាររបស់អ្នកហើយ និងកំពុងរៀបចំឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ।"
         ],
         'auto_ack_closed' => [
-            'en' => "🌙 <b>Thank you for contacting Fieldbi!</b>\n────────────────────\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!",
-            'kh' => "🌙 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ Fieldbi!</b>\n────────────────────\nពេលនេះការិយាល័យរបស់យើងត្រូវបានបិទសម្រាក។\n⏰ <b>ម៉ោងធ្វើការ:</b> ច័ន្ទ – សុក្រ, 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n\nសាររបស់អ្នកត្រូវបានកត់ត្រាទុក ហើយក្រុមការងារនឹងឆ្លើយតបភ្លាមៗនៅពេលបើកដំណើរការឡើងវិញ!"
+            'en' => "🌙 <b>Thank you for contacting FieldBi!</b>\n────────────────────\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!",
+            'kh' => "🌙 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ FieldBi!</b>\n────────────────────\nពេលនេះការិយាល័យរបស់យើងត្រូវបានបិទសម្រាក។\n⏰ <b>ម៉ោងធ្វើការ:</b> ច័ន្ទ – សុក្រ, 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n\nសាររបស់អ្នកត្រូវបានកត់ត្រាទុក ហើយក្រុមការងារនឹងឆ្លើយតបភ្លាមៗនៅពេលបើកដំណើរការឡើងវិញ!"
         ],
         'lang_prompt' => [
             'en' => "🌐 <b>SELECT LANGUAGE / ជ្រើសរើសភាសា</b>\n────────────────────\nPlease select your preferred language below:\n• <code>/lang kh</code> — ភាសាខ្មែរ (Khmer)\n• <code>/lang en</code> — English",

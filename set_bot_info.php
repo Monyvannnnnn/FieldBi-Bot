@@ -23,7 +23,7 @@ curl_close($ch);
 echo "Set Name Result: " . $resName . "\n";
 
 // 2. Set Bot Description ("What can this bot do?" card - English Only)
-$descriptionText = "👋 Welcome to FieldBi Cambodia Support!\n\nFieldbi is a technology & software solutions company specializing in digital platforms and software engineering.\n\n💬 Send us your message, question, or job application details below, and our support team will assist you shortly.";
+$descriptionText = "👋 Welcome to FieldBi Cambodia Support!\n\nFieldBi is a technology & software solutions company specializing in digital platforms and software engineering.\n\n💬 Send us your message, question, or job application details below, and our support team will assist you shortly.";
 
 $descUrl = "https://api.telegram.org/bot{$botToken}/setMyDescription";
 $ch = curl_init($descUrl);

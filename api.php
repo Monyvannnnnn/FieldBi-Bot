@@ -47,7 +47,7 @@ if ($requestMethod === 'GET') {
     header("Content-Type: application/json; charset=utf-8");
     echo json_encode([
         "ok" => true,
-        "service" => "Fieldbi Telegram Support Bot",
+        "service" => "FieldBi Telegram Support Bot",
         "status" => "Online & Running",
         "endpoint_url" => $currentUrl
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
