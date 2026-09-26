@@ -16,6 +16,24 @@ $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
 $scheme = $isHttps ? 'https' : 'http';
 $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$filePath = __DIR__ . $uriPath;
+
+// 1. Router handling for PHP built-in web server (Render Docker start.sh)
+if ($uriPath !== '/' && $uriPath !== '/api.php' && file_exists($filePath) && !is_dir($filePath)) {
+    if (pathinfo($filePath, PATHINFO_EXTENSION) === 'php') {
+        require_once $filePath;
+        exit;
+    } else {
+        // Return false so PHP built-in web server serves static files (PNG, JPG, CSS, JS) directly
+        return false;
+    }
+}
+
+// 2. Clean route /workflow or ?view=workflow
+if ($uriPath === '/workflow' || (isset($_GET['view']) && $_GET['view'] === 'workflow')) {
+    require_once __DIR__ . '/workflow.php';
+    exit;
+}
 
 $currentUrl = "{$scheme}://{$host}{$uriPath}";
 
@@ -107,11 +125,6 @@ function getBotAnalyticsData() {
 
 // GET Request: Serve HTML Web Dashboard or JSON API
 if ($requestMethod === 'GET') {
-    if (isset($_GET['view']) && $_GET['view'] === 'workflow') {
-        require_once __DIR__ . '/workflow.php';
-        exit;
-    }
-
     $wantsJson = (isset($_GET['format']) && $_GET['format'] === 'json')
               || (isset($_GET['json']) && $_GET['json'] === '1')
               || (strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false);
