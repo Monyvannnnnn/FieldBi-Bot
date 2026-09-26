@@ -463,11 +463,11 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? '📄 ដាក់ពាក្យ / CV' : '📄 Submit CV'), 'callback_data' => 'menu_submit_cv'],
+                    ['text' => ($lang === 'kh' ? '🔴 ដាក់ពាក្យ / CV' : '🔴 Submit CV'), 'callback_data' => 'menu_submit_cv'],
                     ['text' => ($lang === 'kh' ? '💬 សួរសំណួរ' : '💬 Ask Question'), 'callback_data' => 'menu_ask_question']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '❓ សំណួរដែលសួរញឹកញាប់ (FAQ)' : '❓ FAQ & Quick Info'), 'callback_data' => 'menu_faq']
+                    ['text' => ($lang === 'kh' ? '🔴 សំណួរដែលសួរញឹកញាប់ (FAQ)' : '🔴 FAQ & Quick Info'), 'callback_data' => 'menu_faq']
                 ],
                 [
                     ['text' => ($lang === 'kh' ? '🌐 ផ្លាស់ប្តូរភាសា (Language)' : '🌐 Change Language'), 'callback_data' => 'menu_lang']
