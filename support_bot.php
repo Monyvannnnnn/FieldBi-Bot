@@ -391,8 +391,8 @@ function getUserLang($chatId) {
 function getI18nText($key, $lang = 'en', $params = []) {
     $translations = [
         'welcome' => [
-            'en' => "👋 <b>Welcome to FieldBi Cambodia Support!</b>\n────────────────────\nFieldBi is a technology & software solutions company.\n\nPlease select an option below or type your message:\n📄 /Submit_CV — Submit your CV / Resume\n💬 /Ask_Question — Ask a Question or Inquiry\n❓ /FAQ — Frequently Asked Questions\n🌐 /lang — Change Language (ភាសា)",
-            'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន FieldBi!</b>\n────────────────────\nFieldBi គឺជាក្រុមហ៊ុនផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ។\n\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នក៖\n📄 /Submit_CV — ដាក់ពាក្យ / CV\n💬 /Ask_Question — សួរសំណួរ\n❓ /FAQ — សំណួរដែលសួរញឹកញាប់\n🌐 /lang — ផ្លាស់ប្តូរភាសា"
+            'en' => "👋 <b>Welcome to FieldBi Cambodia Support!</b>\n\n<i>FieldBi is a technology & software solutions company specializing in digital platforms and software engineering.</i>\n\n<b>How can we assist you today?</b>\nPlease select an option below or type your message directly:\n\n📄 <b>Submit CV</b> — Apply for career opportunities\n💬 <b>Ask Question</b> — Connect with our support team\n❓ <b>FAQ & Info</b> — Job openings, location & working hours",
+            'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន FieldBi Cambodia!</b>\n\n<i>FieldBi គឺជាក្រុមហ៊ុនផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ។</i>\n\n<b>តើយើងអាចជួយអ្វីអ្នកបាននៅថ្ងៃនេះ?</b>\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នកផ្ទាល់៖\n\n📄 <b>ដាក់ពាក្យ / CV</b> — ដាក់ពាក្យស្នើសុំធ្វើការងារ\n💬 <b>សួរសំណួរ</b> — ទំនាក់ទំនងមកកាន់ក្រុមការងារ\n❓ <b>សំណួរញឹកញាប់</b> — ឱកាសការងារ ទីតាំង និងម៉ោងធ្វើការ"
         ],
         'submit_cv_prompt' => [
             'en' => "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>",
@@ -467,10 +467,10 @@ function getI18nKeyboard($key, $lang = 'en') {
                     ['text' => ($lang === 'kh' ? '💬 សួរសំណួរ' : '💬 Ask Question'), 'callback_data' => 'menu_ask_question']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '❓ សំណួរដែលសួរញឹកញាប់' : '❓ FAQ / Quick Answers'), 'callback_data' => 'menu_faq']
+                    ['text' => ($lang === 'kh' ? '❓ សំណួរដែលសួរញឹកញាប់ (FAQ)' : '❓ FAQ & Quick Info'), 'callback_data' => 'menu_faq']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '🌐 ផ្លាស់ប្តូរភាសា (Language)' : '🌐 Change Language / ភាសា'), 'callback_data' => 'menu_lang']
+                    ['text' => ($lang === 'kh' ? '🌐 ផ្លាស់ប្តូរភាសា (Language)' : '🌐 Change Language'), 'callback_data' => 'menu_lang']
                 ]
             ]
         ];
