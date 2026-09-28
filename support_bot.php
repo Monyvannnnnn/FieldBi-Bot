@@ -202,6 +202,8 @@ function initUserStatesSchema() {
                 ALTER TABLE pending_customer_messages ADD COLUMN IF NOT EXISTS is_cv SMALLINT DEFAULT 0;
                 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS assigned_agent VARCHAR(100);
                 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS assigned_agent_id VARCHAR(50);
+                ALTER TABLE conversations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+                ALTER TABLE conversations ADD COLUMN IF NOT EXISTS escalated SMALLINT DEFAULT 0;
             ");
         } elseif ($conn) {
             mysqli_query($conn, "
@@ -227,6 +229,14 @@ function initUserStatesSchema() {
             $checkAgentId = mysqli_query($conn, "SHOW COLUMNS FROM conversations LIKE 'assigned_agent_id'");
             if ($checkAgentId && mysqli_num_rows($checkAgentId) === 0) {
                 mysqli_query($conn, "ALTER TABLE conversations ADD COLUMN assigned_agent_id VARCHAR(50)");
+            }
+            $checkUpdated = mysqli_query($conn, "SHOW COLUMNS FROM conversations LIKE 'updated_at'");
+            if ($checkUpdated && mysqli_num_rows($checkUpdated) === 0) {
+                mysqli_query($conn, "ALTER TABLE conversations ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+            }
+            $checkEscalated = mysqli_query($conn, "SHOW COLUMNS FROM conversations LIKE 'escalated'");
+            if ($checkEscalated && mysqli_num_rows($checkEscalated) === 0) {
+                mysqli_query($conn, "ALTER TABLE conversations ADD COLUMN escalated TINYINT(1) DEFAULT 0");
             }
         }
     } catch (Throwable $e) {}
@@ -932,15 +942,20 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         // Create/Update Conversation Ticket ID (Parameterized Query)
         if (isset($driver) && $driver === 'pgsql') {
             $convStmt = $pdo->prepare("
-                INSERT INTO conversations (customer_chat_id, customer_name, username) 
-                VALUES (?, ?, ?)
-                ON CONFLICT (customer_chat_id) DO UPDATE SET customer_name = EXCLUDED.customer_name, username = EXCLUDED.username
+                INSERT INTO conversations (customer_chat_id, customer_name, username, status, updated_at, escalated) 
+                VALUES (?, ?, ?, 'pending', CURRENT_TIMESTAMP, 0)
+                ON CONFLICT (customer_chat_id) DO UPDATE SET 
+                    customer_name = EXCLUDED.customer_name, 
+                    username = EXCLUDED.username,
+                    status = 'pending',
+                    updated_at = CURRENT_TIMESTAMP,
+                    escalated = 0
                 RETURNING id
             ");
             $convStmt->execute([$chatId, $customerName, $username]);
             $convId = $convStmt->fetchColumn();
         } else {
-            $stmt = mysqli_prepare($conn, "INSERT INTO conversations (customer_chat_id, customer_name, username) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE customer_name = VALUES(customer_name), username = VALUES(username)");
+            $stmt = mysqli_prepare($conn, "INSERT INTO conversations (customer_chat_id, customer_name, username, status, updated_at, escalated) VALUES (?, ?, ?, 'pending', NOW(), 0) ON DUPLICATE KEY UPDATE customer_name = VALUES(customer_name), username = VALUES(username), status = 'pending', updated_at = NOW(), escalated = 0");
             mysqli_stmt_bind_param($stmt, "sss", $chatId, $customerName, $username);
             mysqli_stmt_execute($stmt);
 
@@ -1080,6 +1095,132 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
             mysqli_stmt_bind_param($markStmt, "s", $chatId);
             mysqli_stmt_execute($markStmt);
         }
+    }
+}
+
+/**
+ * Check for unanswered pending tickets waiting for more than X seconds (default 5 minutes / 300s) and send escalation alert to support groups.
+ */
+function checkAndEscalateUnansweredTickets($maxPendingSeconds = 300) {
+    global $pdo, $conn, $driver;
+    static $lastEscalationCheck = 0;
+
+    // Throttle check to execute at most once every 10 seconds to conserve DB resources
+    if (time() - $lastEscalationCheck < 10) {
+        return;
+    }
+    $lastEscalationCheck = time();
+
+    try {
+        if (isset($driver) && $driver === 'pgsql') {
+            $stmt = $pdo->prepare("
+                SELECT c.id, c.customer_chat_id, c.customer_name, c.username, c.created_at,
+                       EXTRACT(EPOCH FROM (NOW() - COALESCE(c.updated_at, c.created_at))) as pending_seconds
+                FROM conversations c
+                WHERE c.status = 'pending'
+                  AND COALESCE(c.escalated, 0) = 0
+                  AND EXTRACT(EPOCH FROM (NOW() - COALESCE(c.updated_at, c.created_at))) >= :seconds
+            ");
+            $stmt->execute([':seconds' => (int)$maxPendingSeconds]);
+            $unanswered = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            $sec = (int)$maxPendingSeconds;
+            $stmt = mysqli_prepare($conn, "
+                SELECT c.id, c.customer_chat_id, c.customer_name, c.username, c.created_at,
+                       TIMESTAMPDIFF(SECOND, COALESCE(c.updated_at, c.created_at), NOW()) as pending_seconds
+                FROM conversations c
+                WHERE c.status = 'pending'
+                  AND COALESCE(c.escalated, 0) = 0
+                  AND TIMESTAMPDIFF(SECOND, COALESCE(c.updated_at, c.created_at), NOW()) >= ?
+            ");
+            mysqli_stmt_bind_param($stmt, "i", $sec);
+            mysqli_stmt_execute($stmt);
+            $unanswered = mysqli_fetch_all(mysqli_stmt_get_result($stmt), MYSQLI_ASSOC);
+        }
+
+        if (empty($unanswered)) {
+            return;
+        }
+
+        // Fetch active support group(s)
+        if (isset($driver) && $driver === 'pgsql') {
+            $groupStmt = $pdo->query("SELECT group_chat_id FROM support_groups WHERE is_active = 1");
+            $groups = $groupStmt->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            $groupRes = mysqli_query($conn, "SELECT group_chat_id FROM support_groups WHERE is_active = 1");
+            $groups = mysqli_fetch_all($groupRes, MYSQLI_ASSOC);
+        }
+
+        if (empty($groups) && defined('ADMIN_CHAT_ID') && !empty(ADMIN_CHAT_ID)) {
+            $groups = [['group_chat_id' => (string)ADMIN_CHAT_ID]];
+        }
+
+        if (empty($groups)) {
+            return;
+        }
+
+        foreach ($unanswered as $ticket) {
+            $convId       = $ticket['id'];
+            $custName     = $ticket['customer_name'] ?? 'Customer';
+            $username     = trim($ticket['username'] ?? '');
+            $chatId       = $ticket['customer_chat_id'];
+            $pendingMin   = max(5, (int)round(($ticket['pending_seconds'] ?? 300) / 60));
+
+            // Format customer contact link
+            $cleanCustName = $custName;
+            if (preg_match('/^(.*?)\s*(\(@[a-zA-Z0-9_]+\))$/', $custName, $matches)) {
+                $cleanCustName = trim($matches[1]);
+            }
+
+            if (!empty($username)) {
+                $cleanUsername = ltrim(trim($username), '@');
+                $contactUrl = "https://t.me/" . htmlspecialchars($cleanUsername);
+                $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
+                $contactDisplay = "{$userLink} (<code>@{$cleanUsername}</code>)";
+            } else {
+                $contactUrl = "tg://user?id={$chatId}";
+                $userLink = "<a href=\"{$contactUrl}\">" . htmlspecialchars($cleanCustName) . "</a>";
+                $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
+            }
+
+            $alertMsg = "🚨 <b>UNANSWERED TICKET ESCALATION ALERT!</b>\n"
+                      . "──────────────\n"
+                      . "🎫 <b>Ticket ID:</b> #{$convId}\n"
+                      . "👤 <b>Customer:</b> {$contactDisplay}\n"
+                      . "⏳ <b>Waiting Time:</b> <b>{$pendingMin}+ minutes</b>\n"
+                      . "⏰ <b>Status:</b> <b>UNANSWERED (PENDING)</b>\n"
+                      . "──────────────\n"
+                      . "⚠️ <i>Support Agents, please claim or reply to Ticket #{$convId} immediately!</i>";
+
+            $claimBtn = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '💬 Contact Customer', 'url' => $contactUrl],
+                        ['text' => '👤 Handle Ticket #' . $convId, 'callback_data' => "claim_{$convId}"]
+                    ]
+                ]
+            ];
+
+            foreach ($groups as $g) {
+                $gId = (string)$g['group_chat_id'];
+                if (isValidChatId($gId)) {
+                    sendMessage($gId, $alertMsg, $claimBtn);
+                }
+            }
+
+            // Mark ticket as escalated = 1 so alert is not repeated
+            if (isset($driver) && $driver === 'pgsql') {
+                $upStmt = $pdo->prepare("UPDATE conversations SET escalated = 1 WHERE id = ?");
+                $upStmt->execute([$convId]);
+            } else {
+                $upStmt = mysqli_prepare($conn, "UPDATE conversations SET escalated = 1 WHERE id = ?");
+                mysqli_stmt_bind_param($upStmt, "i", $convId);
+                mysqli_stmt_execute($upStmt);
+            }
+        }
+
+    } catch (Throwable $e) {
+        error_log("Auto-escalation check exception: " . $e->getMessage());
     }
 }
 
