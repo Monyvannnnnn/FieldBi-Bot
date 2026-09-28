@@ -5,7 +5,7 @@ services:
     runtime: docker
     plan: free
     region: singapore
-    dockerCommand: php -S 0.0.0.0:$PORT api.php
+    dockerCommand: ./start.sh
     envVars:
       - key: DB_DRIVER
         value: pgsql

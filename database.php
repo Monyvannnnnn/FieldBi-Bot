@@ -35,9 +35,10 @@ if ($driver === 'pgsql') {
     $dbName = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? 'postgres');
     $dbUser = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? 'postgres');
     $dbPass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
+    $dbSslMode = getenv('DB_SSLMODE') ?: ($_ENV['DB_SSLMODE'] ?? '');
 
     try {
-        $dsn = "pgsql:host={$dbHost};port={$dbPort};dbname={$dbName}";
+        $dsn = "pgsql:host={$dbHost};port={$dbPort};dbname={$dbName}" . ($dbSslMode ? ";sslmode={$dbSslMode}" : "");
         $pdo = new PDO($dsn, $dbUser, $dbPass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
