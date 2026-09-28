@@ -502,6 +502,17 @@ function getI18nKeyboard($key, $lang = 'en') {
         ];
     }
 
+    if ($key === 'submit_cv') {
+        return [
+            'inline_keyboard' => [
+                [
+                    ['text' => ($lang === 'kh' ? '❌ លុបចោល' : '❌ Cancel'), 'callback_data' => 'menu_cancel_cv'],
+                    ['text' => ($lang === 'kh' ? '💬 សួរសំណួរ' : '💬 Ask Question Instead'), 'callback_data' => 'menu_ask_question']
+                ]
+            ]
+        ];
+    }
+
     if ($key === 'lang_menu') {
         return [
             'inline_keyboard' => [
@@ -1483,7 +1494,19 @@ function processSupportBotUpdate($update) {
             $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'submit_cv');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "📄 បានជ្រើសរើស: ដាក់ពាក្យ CV" : "📄 Option selected: Submit CV");
-            sendMessage($userChatId, getI18nText('submit_cv_prompt', $userLang));
+            sendMessage($userChatId, getI18nText('submit_cv_prompt', $userLang), getI18nKeyboard('submit_cv', $userLang));
+            return;
+        }
+
+        if ($cbData === 'menu_cancel_cv') {
+            $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $userLang   = getUserLang($userChatId);
+            setUserMode($userChatId, 'general');
+            answerCallbackQuery($cbId, $userLang === 'kh' ? "❌ បានលុបចោល" : "❌ Cancelled");
+            $cancelMsg = $userLang === 'kh'
+                ? "❌ <b>បានលុបចោល!</b>\n────────────────────\nអ្នកបានចាកចេញពីទម្រង់ផ្ញើ CV ហើយ។ អ្នកអាចវាយបញ្ជូនសារ ឬសំណួររបស់អ្នកនៅទីនេះបាន។"
+                : "❌ <b>Cancelled!</b>\n────────────────────\nYou have exited CV submission mode. Feel free to send any message or question below!";
+            sendMessage($userChatId, $cancelMsg, getI18nKeyboard('welcome', $userLang));
             return;
         }
 
@@ -2006,7 +2029,7 @@ function processSupportBotUpdate($update) {
         if (preg_match('/^\/(submit_cv|submitcv|cv)(?:@\w+)?/i', $text)) {
             setUserMode($chatId, 'submit_cv');
             $userLang = getUserLang($chatId);
-            sendMessage($chatId, getI18nText('submit_cv_prompt', $userLang));
+            sendMessage($chatId, getI18nText('submit_cv_prompt', $userLang), getI18nKeyboard('submit_cv', $userLang));
             return;
         }
 
@@ -2055,7 +2078,7 @@ function processSupportBotUpdate($update) {
 
             if ($currentMode === 'submit_cv') {
                 if (!isValidCvSubmission($message)) {
-                    sendMessage($chatId, getI18nText('invalid_cv', $userLang));
+                    sendMessage($chatId, getI18nText('invalid_cv', $userLang), getI18nKeyboard('submit_cv', $userLang));
                     return;
                 }
                 $isCvMessage = 1;
