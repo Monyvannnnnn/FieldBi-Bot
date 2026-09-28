@@ -2,8 +2,6 @@
 .env
 .env.local
 .env.*.local
-render.yaml
-
 
 # Logs and databases
 *.log
