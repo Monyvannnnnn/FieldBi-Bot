@@ -5,13 +5,17 @@
 
 set_time_limit(0);
 ignore_user_abort(true);
+ob_implicit_flush(true);
+if (function_exists('ob_end_flush')) {
+    @ob_end_flush();
+}
 
 require_once __DIR__ . '/support_bot.php';
 
 $botToken = BOT_TOKEN;
 $offset = 0;
 
-echo "[" . date('Y-m-d H:i:s') . "] Fast Support Bot Poller started (Auto-Reconnect Enabled) for token: {$botToken}\n";
+echo "[" . date('Y-m-d H:i:s') . "] Fast Support Bot Poller started (Auto-Reconnect Enabled) for token: " . substr($botToken, 0, 10) . "...\n";
 
 // Helper function to maintain active DB connection
 function checkAndReconnectDb() {
@@ -42,8 +46,8 @@ function checkAndReconnectDb() {
 $ch = curl_init();
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT        => 3,
-    CURLOPT_CONNECTTIMEOUT => 2,
+    CURLOPT_TIMEOUT        => 10,
+    CURLOPT_CONNECTTIMEOUT => 5,
     CURLOPT_SSL_VERIFYPEER => true,
     CURLOPT_SSL_VERIFYHOST => 2,
     CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
@@ -68,11 +72,16 @@ while (true) {
                 try {
                     processSupportBotUpdate($up);
                 } catch (Throwable $e) {
-                    echo "Error processing update: " . $e->getMessage() . "\n";
+                    echo "Error processing update #{$updateId}: " . $e->getMessage() . "\n";
                 }
                 
                 $offset = $updateId + 1;
             }
+        }
+    } else {
+        $err = curl_error($ch);
+        if ($err) {
+            echo "[" . date('Y-m-d H:i:s') . "] cURL getUpdates warning: {$err}\n";
         }
     }
 

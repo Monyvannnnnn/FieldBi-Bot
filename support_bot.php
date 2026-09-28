@@ -2224,20 +2224,24 @@ function processSupportBotUpdate($update) {
             }
 
             // Log initial contact timestamp so first message does not send a duplicate auto-reply
-            if (isset($driver) && $driver === 'pgsql') {
-                $bufStmt = $pdo->prepare("
-                    INSERT INTO pending_customer_messages (customer_chat_id, customer_name, username, message_text, photo_file_id, doc_file_id, processed)
-                    VALUES (:cid, :name, :uname, '/start', NULL, NULL, 1)
-                ");
-                $bufStmt->execute([
-                    ':cid'   => $chatId,
-                    ':name'  => $customerName,
-                    ':uname' => $username
-                ]);
-            } else {
-                $bufStmt = mysqli_prepare($conn, "INSERT INTO pending_customer_messages (customer_chat_id, customer_name, username, message_text, photo_file_id, doc_file_id, processed) VALUES (?, ?, ?, '/start', NULL, NULL, 1)");
-                mysqli_stmt_bind_param($bufStmt, "sss", $chatId, $customerName, $username);
-                mysqli_stmt_execute($bufStmt);
+            try {
+                if (isset($driver) && $driver === 'pgsql' && $pdo) {
+                    $bufStmt = $pdo->prepare("
+                        INSERT INTO pending_customer_messages (customer_chat_id, customer_name, username, message_text, photo_file_id, doc_file_id, processed)
+                        VALUES (:cid, :name, :uname, '/start', NULL, NULL, 1)
+                    ");
+                    $bufStmt->execute([
+                        ':cid'   => $chatId,
+                        ':name'  => $customerName,
+                        ':uname' => $username
+                    ]);
+                } elseif (isset($conn) && $conn) {
+                    $bufStmt = mysqli_prepare($conn, "INSERT INTO pending_customer_messages (customer_chat_id, customer_name, username, message_text, photo_file_id, doc_file_id, processed) VALUES (?, ?, ?, '/start', NULL, NULL, 1)");
+                    mysqli_stmt_bind_param($bufStmt, "sss", $chatId, $customerName, $username);
+                    mysqli_stmt_execute($bufStmt);
+                }
+            } catch (Throwable $e) {
+                error_log("Start message DB logging warning: " . $e->getMessage());
             }
 
             $userLang = getUserLang($chatId);
