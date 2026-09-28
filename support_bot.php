@@ -419,8 +419,8 @@ function getI18nText($key, $lang = 'en', $params = []) {
             'kh' => "⏰ <b>ម៉ោងធ្វើការ</b>\n────────────────────\n• <b>ច័ន្ទ – សុក្រ:</b> 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n• <b>សៅរ៍:</b> 8:00 ព្រឹក – 12:00 ថ្ងៃត្រង់\n• <b>អាទិត្យ:</b> ឈប់សម្រាក"
         ],
         'invalid_cv' => [
-            'en' => "⚠️ <b>Invalid CV Format!</b>\n────────────────────\nPlease upload your CV as a valid file or image (<b>PDF, DOC, DOCX, PNG</b>). Plain text messages are not accepted.\n\n<i>If you wish to ask a general question instead, tap /Ask_Question.</i>",
-            'kh' => "⚠️ <b>ទម្រង់ CV មិនត្រឹមត្រូវ!</b>\n────────────────────\nសូមផ្ញើ CV ជាឯកសារ ឬរូបថត (<b>PDF, DOC, DOCX, PNG</b>) ប៉ុណ្ណោះ។ មិនទទួលយករសារអក្សរទទេទេ។\n\n<i>ប្រសិនបើអ្នកចង់សួរសំណួរទូទៅ សូមចុច /Ask_Question</i>"
+            'en' => "⚠️ <b>Invalid CV Format!</b>\n────────────────────\nPlease upload your CV as a valid file or image (<b>PDF, DOC, DOCX, PNG</b>). Plain text messages are not accepted.\n\n<i>If you wish to cancel or ask a question instead, tap /Ask_Question or /start.</i>",
+            'kh' => "⚠️ <b>ទម្រង់ CV មិនត្រឹមត្រូវ!</b>\n────────────────────\nសូមផ្ញើ CV ជាឯកសារ ឬរូបថត (<b>PDF, DOC, DOCX, PNG</b>) ប៉ុណ្ណោះ។ មិនទទួលសារអក្សរទទេទេ។\n\n<i>ប្រសិនបើអ្នកចង់លុបចោល ឬសួរសំណួរ សូមចុច /Ask_Question ឬ /start</i>"
         ],
         'cv_received' => [
             'en' => "✅ <b>CV Received & Submitted!</b>\n────────────────────\nThank you, <b>{name}</b>! 📄\n\nOur HR & Recruitment team has received your application and CV details. We will review your profile and reach out to you shortly.\n\n💬 <i>If you need to send additional documents or updates, feel free to send them here anytime.</i>",
@@ -1961,6 +1961,7 @@ function processSupportBotUpdate($update) {
         }
 
         if (strpos($text, '/start') === 0) {
+            setUserMode($chatId, 'general');
             $firstName = trim($message["chat"]["first_name"] ?? '');
             $lastName  = trim($message["chat"]["last_name"] ?? '');
             $username  = trim($message["chat"]["username"] ?? '');
@@ -1989,6 +1990,16 @@ function processSupportBotUpdate($update) {
 
             $userLang = getUserLang($chatId);
             sendMessage($chatId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
+            return;
+        }
+
+        if (preg_match('/^\/(cancel|reset)(?:@\w+)?/i', $text)) {
+            setUserMode($chatId, 'general');
+            $userLang = getUserLang($chatId);
+            $cancelMsg = $userLang === 'kh'
+                ? "❌ <b>បានលុបចោល!</b>\n────────────────────\nអ្នកបានចាកចេញពីទម្រង់ផ្ញើ CV ហើយ។ អ្នកអាចវាយបញ្ជូនសារ ឬសំណួររបស់អ្នកនៅទីនេះបាន។"
+                : "❌ <b>Cancelled!</b>\n────────────────────\nYou have exited CV submission mode. Feel free to send any message or question below!";
+            sendMessage($chatId, $cancelMsg, getI18nKeyboard('welcome', $userLang));
             return;
         }
 
