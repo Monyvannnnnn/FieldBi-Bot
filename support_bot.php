@@ -395,8 +395,8 @@ function getI18nText($key, $lang = 'en', $params = []) {
             'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន FieldBi Cambodia!</b>\n✨ <i>ដៃគូផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ</i>\n\n<b>តើយើងអាចជួយអ្វីអ្នកបាននៅថ្ងៃនេះ?</b>\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នកផ្ទាល់៖\n\n💡 <i>ចំណាំ៖ អ្នកអាចផ្លាស់ប្តូរភាសាបានគ្រប់ពេលតាមរយៈប៊ូតុងខាងក្រោម។</i>"
         ],
         'submit_cv_prompt' => [
-            'en' => "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX</b>) or send your CV photo/details below.\n\n⏳ <i>Waiting for your CV upload...</i>",
-            'kh' => "📄 <b>ដាក់ពាក្យស្នើសុំការងារ (CV / RESUME)</b>\n────────────────────\nសូមបញ្ជូនឯកសារ CV របស់អ្នក (<b>PDF, DOC, DOCX</b>) ឬរូបថត/ព័ត៌មាន CV នៅខាងក្រោម។\n\n⏳ <i>កំពុងរង់ចាំការផ្ញើ CV របស់អ្នក...</i>"
+            'en' => "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX, PNG</b>) below.\n\n⏳ <i>Waiting for your CV file upload...</i>",
+            'kh' => "📄 <b>ដាក់ពាក្យស្នើសុំការងារ (CV / RESUME)</b>\n────────────────────\nសូមបញ្ជូនឯកសារ CV របស់អ្នក (<b>PDF, DOC, DOCX, PNG</b>) នៅខាងក្រោម។\n\n⏳ <i>កំពុងរង់ចាំការផ្ញើឯកសារ CV របស់អ្នក...</i>"
         ],
         'ask_question_prompt' => [
             'en' => "💬 <b>ASK A QUESTION / HUMAN SUPPORT</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!\n\n👤 <i>Or tap the button below to connect directly with our Human Support team.</i>",
@@ -419,8 +419,8 @@ function getI18nText($key, $lang = 'en', $params = []) {
             'kh' => "⏰ <b>ម៉ោងធ្វើការ</b>\n────────────────────\n• <b>ច័ន្ទ – សុក្រ:</b> 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n• <b>សៅរ៍:</b> 8:00 ព្រឹក – 12:00 ថ្ងៃត្រង់\n• <b>អាទិត្យ:</b> ឈប់សម្រាក"
         ],
         'invalid_cv' => [
-            'en' => "⚠️ <b>Invalid CV Format!</b>\n────────────────────\nPlease upload your CV as a valid document (<b>PDF, DOC, DOCX</b>) or image (<b>PNG, JPG</b>).\n\n<i>If you wish to ask a general question instead, tap /Ask_Question.</i>",
-            'kh' => "⚠️ <b>ទម្រង់ CV មិនត្រឹមត្រូវ!</b>\n────────────────────\nសូមផ្ញើ CV ជាឯកសារ (<b>PDF, DOC, DOCX</b>) ឬជារូបថត (<b>PNG, JPG</b>)។\n\n<i>ប្រសិនបើអ្នកចង់សួរសំណួរទូទៅ សូមចុច /Ask_Question</i>"
+            'en' => "⚠️ <b>Invalid CV Format!</b>\n────────────────────\nPlease upload your CV as a valid file or image (<b>PDF, DOC, DOCX, PNG</b>). Plain text messages are not accepted.\n\n<i>If you wish to ask a general question instead, tap /Ask_Question.</i>",
+            'kh' => "⚠️ <b>ទម្រង់ CV មិនត្រឹមត្រូវ!</b>\n────────────────────\nសូមផ្ញើ CV ជាឯកសារ ឬរូបថត (<b>PDF, DOC, DOCX, PNG</b>) ប៉ុណ្ណោះ។ មិនទទួលយករសារអក្សរទទេទេ។\n\n<i>ប្រសិនបើអ្នកចង់សួរសំណួរទូទៅ សូមចុច /Ask_Question</i>"
         ],
         'cv_received' => [
             'en' => "✅ <b>CV Received & Submitted!</b>\n────────────────────\nThank you, <b>{name}</b>! 📄\n\nOur HR & Recruitment team has received your application and CV details. We will review your profile and reach out to you shortly.\n\n💬 <i>If you need to send additional documents or updates, feel free to send them here anytime.</i>",
@@ -517,35 +517,34 @@ function getI18nKeyboard($key, $lang = 'en') {
 }
 
 /**
- * Validate whether a message contains a valid CV (document, photo, or valid resume content)
+ * Validate whether a message contains a valid CV (Document or Image attachment: PDF, DOC, DOCX, PNG, JPG)
  */
 function isValidCvSubmission($message) {
     $document = $message["document"] ?? null;
     $photo    = $message["photo"] ?? null;
-    $text     = trim($message["text"] ?? ($message["caption"] ?? ''));
 
     // 1. Check Document attachment
     if (!empty($document)) {
         $fileName = strtolower($document["file_name"] ?? '');
         $ext = pathinfo($fileName, PATHINFO_EXTENSION);
+        $allowedExtensions = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
         $blockedExtensions = ['exe', 'bat', 'cmd', 'sh', 'apk', 'jar', 'vbs', 'scr', 'dll'];
 
         if (!empty($ext) && in_array($ext, $blockedExtensions)) {
             return false;
         }
-        return true;
+
+        if (empty($ext) || in_array($ext, $allowedExtensions)) {
+            return true;
+        }
     }
 
-    // 2. Check Photo attachment
+    // 2. Check Photo attachment (PNG / JPG uploaded directly as photo)
     if (!empty($photo)) {
         return true;
     }
 
-    // 3. Check Text or Link content
-    if (!empty($text)) {
-        return true;
-    }
-
+    // Reject plain text messages for CV submission
     return false;
 }
 
