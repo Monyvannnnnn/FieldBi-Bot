@@ -29,12 +29,28 @@ $driver = getenv('DB_DRIVER') ?: ($_ENV['DB_DRIVER'] ?? 'mysql');
 $pdo  = null;
 $conn = null;
 
+// Parse DATABASE_URL / INTERNAL_DATABASE_URL if provided by cloud host (Render, Railway, Supabase)
+$dbUrl = getenv('DATABASE_URL') ?: (getenv('INTERNAL_DATABASE_URL') ?: (getenv('EXTERNAL_DATABASE_URL') ?: ($_ENV['DATABASE_URL'] ?? '')));
+if (!empty($dbUrl)) {
+    $parsedUrl = parse_url($dbUrl);
+    if ($parsedUrl) {
+        $driver = 'pgsql';
+        $dbHost = $parsedUrl['host'] ?? '127.0.0.1';
+        $dbPort = $parsedUrl['port'] ?? 5432;
+        $dbUser = isset($parsedUrl['user']) ? rawurldecode($parsedUrl['user']) : 'postgres';
+        $dbPass = isset($parsedUrl['pass']) ? rawurldecode($parsedUrl['pass']) : '';
+        $dbName = isset($parsedUrl['path']) ? ltrim($parsedUrl['path'], '/') : 'postgres';
+    }
+}
+
 if ($driver === 'pgsql') {
-    $dbHost = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '127.0.0.1');
-    $dbPort = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '5432');
-    $dbName = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? 'postgres');
-    $dbUser = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? 'postgres');
-    $dbPass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
+    if (!isset($dbHost)) {
+        $dbHost = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? '127.0.0.1');
+        $dbPort = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? '5432');
+        $dbName = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? 'postgres');
+        $dbUser = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? 'postgres');
+        $dbPass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
+    }
     $dbSslMode = getenv('DB_SSLMODE') ?: ($_ENV['DB_SSLMODE'] ?? 'require');
 
     try {

@@ -352,7 +352,7 @@ function setUserMode($chatId, $mode) {
     @file_put_contents($stateFile, json_encode($existing));
 
     try {
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $stmt = $pdo->prepare("
                 INSERT INTO user_states (customer_chat_id, current_mode) VALUES (?, ?)
                 ON CONFLICT (customer_chat_id) DO UPDATE SET current_mode = EXCLUDED.current_mode
@@ -377,7 +377,7 @@ function getUserMode($chatId) {
     initUserStatesSchema();
 
     try {
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $stmt = $pdo->prepare("SELECT current_mode FROM user_states WHERE customer_chat_id = ?");
             $stmt->execute([$chatId]);
             $mode = $stmt->fetchColumn();
@@ -428,7 +428,7 @@ function setUserLang($chatId, $lang) {
     @file_put_contents($stateFile, json_encode($existing));
 
     try {
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $stmt = $pdo->prepare("
                 INSERT INTO user_states (customer_chat_id, lang) VALUES (?, ?)
                 ON CONFLICT (customer_chat_id) DO UPDATE SET lang = EXCLUDED.lang
@@ -453,7 +453,7 @@ function getUserLang($chatId) {
     initUserStatesSchema();
 
     try {
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $stmt = $pdo->prepare("SELECT lang FROM user_states WHERE customer_chat_id = ?");
             $stmt->execute([$chatId]);
             $lang = $stmt->fetchColumn();
@@ -934,7 +934,7 @@ function editMessageCaption($chatId, $messageId, $caption, $replyMarkup = null) 
 function flushPendingCustomerMessages($forceDelaySeconds = 5) {
     global $pdo, $conn, $driver;
 
-    if (isset($driver) && $driver === 'pgsql') {
+    if (isset($driver) && $driver === 'pgsql' && $pdo) {
         $readyStmt = $pdo->prepare("
             SELECT customer_chat_id, MAX(customer_name) as customer_name, MAX(username) as username
             FROM pending_customer_messages
@@ -985,7 +985,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         if (!isValidChatId($chatId)) continue;
 
         // Fetch all pending messages for this customer (Parameterized Query)
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $msgStmt = $pdo->prepare("SELECT * FROM pending_customer_messages WHERE customer_chat_id = ? AND processed = 0 ORDER BY id ASC");
             $msgStmt->execute([$chatId]);
             $pendingMsgs = $msgStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1028,7 +1028,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         $combinedText = !empty($messageBody) ? "💬 <b>Details:</b>\n<blockquote>" . $messageBody . "</blockquote>" : '';
 
         // Create/Update Conversation Ticket ID (Parameterized Query)
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $convStmt = $pdo->prepare("
                 INSERT INTO conversations (customer_chat_id, customer_name, username, status, updated_at, escalated) 
                 VALUES (?, ?, ?, 'pending', CURRENT_TIMESTAMP, 0)
@@ -1155,7 +1155,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                 $groupMessageId = $apiRes['result']['message_id'];
 
                 // Map Group Message ID -> Customer Chat ID (Parameterized Query)
-                if (isset($driver) && $driver === 'pgsql') {
+                if (isset($driver) && $driver === 'pgsql' && $pdo) {
                     $mapStmt = $pdo->prepare("
                         INSERT INTO group_messages (group_chat_id, group_message_id, customer_chat_id)
                         VALUES (:gid, :gmid, :cid)
@@ -1175,7 +1175,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
         }
 
         // Mark pending messages as processed (Parameterized Query)
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $markStmt = $pdo->prepare("UPDATE pending_customer_messages SET processed = 1 WHERE customer_chat_id = ? AND processed = 0");
             $markStmt->execute([$chatId]);
         } else {
@@ -1200,7 +1200,7 @@ function checkAndEscalateUnansweredTickets($maxPendingSeconds = 300) {
     $lastEscalationCheck = time();
 
     try {
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $stmt = $pdo->prepare("
                 SELECT c.id, c.customer_chat_id, c.customer_name, c.username, c.created_at,
                        EXTRACT(EPOCH FROM (NOW() - COALESCE(c.updated_at, c.created_at))) as pending_seconds
@@ -1231,7 +1231,7 @@ function checkAndEscalateUnansweredTickets($maxPendingSeconds = 300) {
         }
 
         // Fetch active support group(s)
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $groupStmt = $pdo->query("SELECT group_chat_id FROM support_groups WHERE is_active = 1");
             $groups = $groupStmt->fetchAll(PDO::FETCH_ASSOC);
         } else {
@@ -1297,7 +1297,7 @@ function checkAndEscalateUnansweredTickets($maxPendingSeconds = 300) {
             }
 
             // Mark ticket as escalated = 1 so alert is not repeated
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $upStmt = $pdo->prepare("UPDATE conversations SET escalated = 1 WHERE id = ?");
                 $upStmt->execute([$convId]);
             } else {
@@ -1337,7 +1337,7 @@ function processSupportBotUpdate($update) {
             $convId = (int)substr($cbData, 6);
 
             $convData = null;
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $stmt = $pdo->prepare("SELECT id, customer_chat_id, customer_name, username, assigned_agent FROM conversations WHERE id = ?");
                 $stmt->execute([$convId]);
                 $convData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1365,7 +1365,7 @@ function processSupportBotUpdate($update) {
             }
 
             // Assign ticket in database (Parameterized Query)
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $upStmt = $pdo->prepare("UPDATE conversations SET status = 'claimed', assigned_agent = ?, assigned_agent_id = ? WHERE id = ?");
                 $upStmt->execute([$agentName, $agentId, $convId]);
             } else {
@@ -1488,7 +1488,7 @@ function processSupportBotUpdate($update) {
             $convId = (int)substr($cbData, 11);
 
             $convData = null;
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $stmt = $pdo->prepare("SELECT id, customer_chat_id, customer_name, username, assigned_agent FROM conversations WHERE id = ?");
                 $stmt->execute([$convId]);
                 $convData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1528,7 +1528,7 @@ function processSupportBotUpdate($update) {
             $statusBadge = "❌ <b>Status:</b> <b>DECLINED</b> by <i>" . htmlspecialchars($agentName) . "</i>";
             $toastMsg    = "❌ Candidate Application Declined";
 
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $upStmt = $pdo->prepare("UPDATE conversations SET status = ?, assigned_agent = ?, assigned_agent_id = ? WHERE id = ?");
                 $upStmt->execute([$statusText, $agentName, $agentId, $convId]);
             } else {
@@ -1593,7 +1593,7 @@ function processSupportBotUpdate($update) {
                 }
 
                 $convData = null;
-                if (isset($driver) && $driver === 'pgsql') {
+                if (isset($driver) && $driver === 'pgsql' && $pdo) {
                     $stmt = $pdo->prepare("SELECT id, customer_chat_id, customer_name, username, assigned_agent FROM conversations WHERE id = ?");
                     $stmt->execute([$convId]);
                     $convData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1652,7 +1652,7 @@ function processSupportBotUpdate($update) {
 
                 // Update DB status and assigned agent (Parameterized Query)
                 try {
-                    if (isset($driver) && $driver === 'pgsql') {
+                    if (isset($driver) && $driver === 'pgsql' && $pdo) {
                         $upStmt = $pdo->prepare("UPDATE conversations SET status = ?, assigned_agent = ?, assigned_agent_id = ? WHERE id = ?");
                         $upStmt->execute([$statusText, $agentName, $agentId, $convId]);
                     } else {
@@ -1858,7 +1858,7 @@ function processSupportBotUpdate($update) {
         // If no ticket ID in command, check if command was sent as a reply to a ticket card
         if (!$targetConvId && isset($message["reply_to_message"])) {
             $replyToId = $message["reply_to_message"]["message_id"];
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $stmt = $pdo->prepare("
                     SELECT c.id 
                     FROM group_messages gm 
@@ -1883,7 +1883,7 @@ function processSupportBotUpdate($update) {
 
         // If still no ticket ID, fallback to most recent conversation
         if (!$targetConvId) {
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $targetConvId = (int)$pdo->query("SELECT id FROM conversations ORDER BY id DESC LIMIT 1")->fetchColumn();
             } else {
                 $res = mysqli_query($conn, "SELECT id FROM conversations ORDER BY id DESC LIMIT 1");
@@ -1897,7 +1897,7 @@ function processSupportBotUpdate($update) {
         }
 
         // Update DB status = 'handled', assigned_agent = $agentName
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $upStmt = $pdo->prepare("UPDATE conversations SET status = 'handled', assigned_agent = ? WHERE id = ?");
             $upStmt->execute([$agentName, $targetConvId]);
         } else {
@@ -1913,7 +1913,7 @@ function processSupportBotUpdate($update) {
         } else {
             // Broadcast to active support groups if executed in private chat
             $groups = [];
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $groups = $pdo->query("SELECT group_chat_id FROM support_groups WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC);
             } else {
                 $res = mysqli_query($conn, "SELECT group_chat_id FROM support_groups WHERE is_active = 1");
@@ -1941,7 +1941,7 @@ function processSupportBotUpdate($update) {
 
         if (isset($message["reply_to_message"])) {
             $replyToId = $message["reply_to_message"]["message_id"];
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $stmt = $pdo->prepare("SELECT c.id, c.customer_chat_id, c.customer_name FROM group_messages gm LEFT JOIN conversations c ON c.customer_chat_id = gm.customer_chat_id WHERE gm.group_message_id = ?");
                 $stmt->execute([$replyToId]);
                 $convRow = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1995,7 +1995,7 @@ function processSupportBotUpdate($update) {
         $targetCustomerChatId = null;
         $customerName = 'Customer';
 
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $stmt = $pdo->prepare("
                 SELECT gm.customer_chat_id, c.customer_name 
                 FROM group_messages gm 
@@ -2040,7 +2040,7 @@ function processSupportBotUpdate($update) {
             $userLink = "<a href=\"tg://user?id={$targetCustomerChatId}\">" . htmlspecialchars($cleanCustName) . "</a>";
 
             // Update DB status = 'handled', assigned_agent = $agentName
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $upStmt = $pdo->prepare("UPDATE conversations SET status = 'handled', assigned_agent = ? WHERE customer_chat_id = ?");
                 $upStmt->execute([$agentName, $targetCustomerChatId]);
             } else {
@@ -2083,7 +2083,7 @@ function processSupportBotUpdate($update) {
 
         // Check if group is already authorized in Database (Parameterized Query)
         $isGroupAuthorized = false;
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $checkG = $pdo->prepare("SELECT 1 FROM support_groups WHERE group_chat_id = ? AND is_active = 1");
             $checkG->execute([$chatId]);
             $isGroupAuthorized = (bool)$checkG->fetchColumn();
@@ -2097,7 +2097,7 @@ function processSupportBotUpdate($update) {
 
         // Automatically activate/authorize any group where the bot is added or active (Parameterized Query)
         if (!$isGroupAuthorized) {
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $stmt = $pdo->prepare("
                     INSERT INTO support_groups (group_chat_id, group_title, is_active)
                     VALUES (:gid, :title, 1)
@@ -2129,7 +2129,7 @@ function processSupportBotUpdate($update) {
         $targetCustomerChatId = null;
         $customerName         = 'Customer';
 
-        if (isset($driver) && $driver === 'pgsql') {
+        if (isset($driver) && $driver === 'pgsql' && $pdo) {
             $stmt = $pdo->query("SELECT customer_chat_id, customer_name FROM conversations ORDER BY id DESC LIMIT 1");
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($row) {
@@ -2282,7 +2282,7 @@ function processSupportBotUpdate($update) {
         if ($text === '/status' && !empty(ADMIN_CHAT_ID) && $senderId === ADMIN_CHAT_ID) {
             $gCount = 0;
             $pCount = 0;
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $gCount = (int)$pdo->query("SELECT COUNT(*) FROM support_groups WHERE is_active = 1")->fetchColumn();
                 $pCount = (int)$pdo->query("SELECT COUNT(*) FROM pending_customer_messages WHERE processed = 0")->fetchColumn();
             } else {
@@ -2322,7 +2322,7 @@ function processSupportBotUpdate($update) {
 
             // Check if customer sent any message in the last 15 minutes (Parameterized Query)
             $recentlyContacted = false;
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $checkRecent = $pdo->prepare("
                     SELECT 1 FROM pending_customer_messages 
                     WHERE customer_chat_id = ? 
@@ -2345,7 +2345,7 @@ function processSupportBotUpdate($update) {
             }
 
             // Save message into pending buffer table (Parameterized Query)
-            if (isset($driver) && $driver === 'pgsql') {
+            if (isset($driver) && $driver === 'pgsql' && $pdo) {
                 $bufStmt = $pdo->prepare("
                     INSERT INTO pending_customer_messages (customer_chat_id, customer_name, username, message_text, photo_file_id, doc_file_id, is_cv)
                     VALUES (:cid, :name, :uname, :msg, :photo, :doc, :iscv)
