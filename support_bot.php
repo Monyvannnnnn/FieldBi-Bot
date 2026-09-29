@@ -557,14 +557,14 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? 'ដាក់ពាក្យ CV' : 'Submit CV'), 'callback_data' => 'menu_submit_cv'],
-                    ['text' => ($lang === 'kh' ? 'សួរសំណួរ' : 'Ask Question'), 'callback_data' => 'menu_ask_question']
+                    ['text' => ($lang === 'kh' ? '📄 ដាក់ពាក្យ / CV' : '📄 Submit CV'), 'callback_data' => 'menu_submit_cv'],
+                    ['text' => ($lang === 'kh' ? '💬 សួរសំណួរ' : '💬 Ask Question'), 'callback_data' => 'menu_ask_question']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? 'សំណួរញឹកញាប់ (FAQ)' : 'FAQ & Quick Info'), 'callback_data' => 'menu_faq']
+                    ['text' => ($lang === 'kh' ? '❓ សំណួរដែលសួរញឹកញាប់ (FAQ)' : '❓ FAQ & Quick Info'), 'callback_data' => 'menu_faq']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? 'ផ្លាស់ប្តូរភាសា' : 'Change Language'), 'callback_data' => 'menu_lang']
+                    ['text' => ($lang === 'kh' ? '🌐 ផ្លាស់ប្តូរភាសា (Language)' : '🌐 Change Language'), 'callback_data' => 'menu_lang']
                 ]
             ]
         ];
@@ -574,11 +574,11 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? 'ឱកាសការងារ' : 'Job Openings'), 'callback_data' => 'faq_jobs'],
-                    ['text' => ($lang === 'kh' ? 'ទីតាំងការិយាល័យ' : 'Office Location'), 'callback_data' => 'faq_location']
+                    ['text' => ($lang === 'kh' ? '📋 ឱកាសការងារ' : '📋 Job Openings'), 'callback_data' => 'faq_jobs'],
+                    ['text' => ($lang === 'kh' ? '📍 ទីតាំងការិយាល័យ' : '📍 Office Location'), 'callback_data' => 'faq_location']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅម៉ឺនុយដើម' : 'Back to Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -588,8 +588,8 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅ FAQ' : 'Back to FAQ'), 'callback_data' => 'menu_faq'],
-                    ['text' => ($lang === 'kh' ? 'ម៉ឺនុយដើម' : 'Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅ FAQ' : '🔙 Back to FAQ'), 'callback_data' => 'menu_faq'],
+                    ['text' => ($lang === 'kh' ? '🏠 ម៉ឺនុយដើម' : '🏠 Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -599,11 +599,11 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? 'ដាក់ពាក្យ CV ឥឡូវនេះ' : 'Submit CV Now'), 'callback_data' => 'menu_submit_cv']
+                    ['text' => ($lang === 'kh' ? '📄 ដាក់ពាក្យ CV ឥឡូវនេះ' : '📄 Submit CV Now'), 'callback_data' => 'menu_submit_cv']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅ FAQ' : 'Back to FAQ'), 'callback_data' => 'menu_faq'],
-                    ['text' => ($lang === 'kh' ? 'ម៉ឺនុយដើម' : 'Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅ FAQ' : '🔙 Back to FAQ'), 'callback_data' => 'menu_faq'],
+                    ['text' => ($lang === 'kh' ? '🏠 ម៉ឺនុយដើម' : '🏠 Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -614,10 +614,10 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? 'ទាក់ទង Human Support ផ្ទាល់' : 'Contact Support Directly'), 'url' => $contactUrl]
+                    ['text' => ($lang === 'kh' ? '👤 ទាក់ទង Human Support ផ្ទាល់' : '👤 Contact Support Directly'), 'url' => $contactUrl]
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅម៉ឺនុយដើម' : 'Back to Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -627,11 +627,11 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? 'លុបចោល' : 'Cancel'), 'callback_data' => 'menu_cancel_cv'],
-                    ['text' => ($lang === 'kh' ? 'សួរសំណួរ' : 'Ask Question Instead'), 'callback_data' => 'menu_ask_question']
+                    ['text' => ($lang === 'kh' ? '❌ លុបចោល' : '❌ Cancel'), 'callback_data' => 'menu_cancel_cv'],
+                    ['text' => ($lang === 'kh' ? '💬 សួរសំណួរ' : '💬 Ask Question Instead'), 'callback_data' => 'menu_ask_question']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅម៉ឺនុយដើម' : 'Back to Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -641,11 +641,11 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => 'ភាសាខ្មែរ (Khmer)', 'callback_data' => 'lang_kh'],
-                    ['text' => 'English', 'callback_data' => 'lang_en']
+                    ['text' => '🇰🇭 ភាសាខ្មែរ (Khmer)', 'callback_data' => 'lang_kh'],
+                    ['text' => '🇬🇧 English', 'callback_data' => 'lang_en']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅម៉ឺនុយដើម' : 'Back to Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
