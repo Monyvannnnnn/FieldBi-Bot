@@ -1010,14 +1010,15 @@ function answerCallbackQuery($callbackQueryId, $text = '', $showAlert = false) {
 /**
  * Edit message text in Telegram chat
  */
-function editMessageText($chatId, $messageId, $text, $replyMarkup = null) {
+function editMessageText($chatId, $messageId, $text, $replyMarkup = null, $disableWebPagePreview = true) {
     if (!isValidChatId($chatId)) return null;
     $url = "https://api.telegram.org/bot" . BOT_TOKEN . "/editMessageText";
     $postFields = [
-        'chat_id'    => $chatId,
-        'message_id' => $messageId,
-        'text'       => $text,
-        'parse_mode' => 'HTML'
+        'chat_id'                  => $chatId,
+        'message_id'               => $messageId,
+        'text'                     => $text,
+        'parse_mode'               => 'HTML',
+        'disable_web_page_preview' => $disableWebPagePreview ? 'true' : 'false'
     ];
     if ($replyMarkup !== null) {
         $postFields['reply_markup'] = is_array($replyMarkup) ? json_encode($replyMarkup) : $replyMarkup;
@@ -1867,11 +1868,11 @@ function processSupportBotUpdate($update) {
         }
 
         if ($cbData === 'menu_welcome') {
+            answerCallbackQuery($cbId, "🏠 Main Menu");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
             $msgId      = $cb["message"]["message_id"] ?? null;
             $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'general');
-            answerCallbackQuery($cbId, "🏠 Main Menu");
             editOrSendMenuCard($userChatId, $msgId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
             return;
         }
@@ -1880,8 +1881,8 @@ function processSupportBotUpdate($update) {
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
             $msgId      = $cb["message"]["message_id"] ?? null;
             $userLang   = getUserLang($userChatId);
-            setUserMode($userChatId, 'submit_cv');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "📄 បានជ្រើសរើស: ដាក់ពាក្យ CV" : "📄 Option selected: Submit CV");
+            setUserMode($userChatId, 'submit_cv');
             editOrSendMenuCard($userChatId, $msgId, getI18nText('submit_cv_prompt', $userLang), getI18nKeyboard('submit_cv', $userLang));
             return;
         }
@@ -1890,8 +1891,8 @@ function processSupportBotUpdate($update) {
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
             $msgId      = $cb["message"]["message_id"] ?? null;
             $userLang   = getUserLang($userChatId);
-            setUserMode($userChatId, 'general');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "❌ បានលុបចោល" : "❌ Cancelled");
+            setUserMode($userChatId, 'general');
             editOrSendMenuCard($userChatId, $msgId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
             return;
         }
@@ -1900,8 +1901,8 @@ function processSupportBotUpdate($update) {
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
             $msgId      = $cb["message"]["message_id"] ?? null;
             $userLang   = getUserLang($userChatId);
-            setUserMode($userChatId, 'ask_question');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "💬 បានជ្រើសរើស: សួរសំណួរ" : "💬 Option selected: Ask Question");
+            setUserMode($userChatId, 'ask_question');
             editOrSendMenuCard($userChatId, $msgId, getI18nText('ask_question_prompt', $userLang), getI18nKeyboard('ask_question', $userLang));
             return;
         }
@@ -1932,28 +1933,28 @@ function processSupportBotUpdate($update) {
         }
 
         if ($cbData === 'menu_lang') {
+            answerCallbackQuery($cbId, "🌐 Select Language / ជ្រើសរើសភាសា");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
             $msgId      = $cb["message"]["message_id"] ?? null;
             $userLang   = getUserLang($userChatId);
-            answerCallbackQuery($cbId, "🌐 Select Language / ជ្រើសរើសភាសា");
             editOrSendMenuCard($userChatId, $msgId, getI18nText('lang_prompt', $userLang), getI18nKeyboard('lang_menu', $userLang));
             return;
         }
 
         if ($cbData === 'lang_kh') {
+            answerCallbackQuery($cbId, "🇰🇭 បានជ្រើសរើស ភាសាខ្មែរ!");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
             $msgId      = $cb["message"]["message_id"] ?? null;
             setUserLang($userChatId, 'kh');
-            answerCallbackQuery($cbId, "🇰🇭 បានជ្រើសរើស ភាសាខ្មែរ!");
             editOrSendMenuCard($userChatId, $msgId, getI18nText('welcome', 'kh'), getI18nKeyboard('welcome', 'kh'));
             return;
         }
 
         if ($cbData === 'lang_en') {
+            answerCallbackQuery($cbId, "🇬🇧 Language set to English!");
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
             $msgId      = $cb["message"]["message_id"] ?? null;
             setUserLang($userChatId, 'en');
-            answerCallbackQuery($cbId, "🇬🇧 Language set to English!");
             editOrSendMenuCard($userChatId, $msgId, getI18nText('welcome', 'en'), getI18nKeyboard('welcome', 'en'));
             return;
         }
