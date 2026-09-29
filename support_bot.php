@@ -533,8 +533,8 @@ function getI18nText($key, $lang = 'en', $params = []) {
             'kh' => "🌙 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ FieldBi!</b>\n────────────────────\nពេលនេះការិយាល័យរបស់យើងត្រូវបានបិទសម្រាក។\n⏰ <b>ម៉ោងធ្វើការ:</b> ច័ន្ទ – សុក្រ, 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n\nសាររបស់អ្នកត្រូវបានកត់ត្រាទុក ហើយក្រុមការងារនឹងឆ្លើយតបភ្លាមៗនៅពេលបើកដំណើរការឡើងវិញ!"
         ],
         'lang_prompt' => [
-            'en' => "🌐 <b>SELECT LANGUAGE / ជ្រើសរើសភាសា</b>\n────────────────────\nPlease select your preferred language below:\n• <code>/lang kh</code> — ភាសាខ្មែរ (Khmer)\n• <code>/lang en</code> — English",
-            'kh' => "🌐 <b>ជ្រើសរើសភាសា / SELECT LANGUAGE</b>\n────────────────────\nសូមជ្រើសរើសភាសាដែលអ្នកពេញចិត្ត៖\n• <code>/lang kh</code> — ភាសាខ្មែរ (Khmer)\n• <code>/lang en</code> — English"
+            'en' => "🌐 <b>SELECT LANGUAGE / ជ្រើសរើសភាសា</b>\n────────────────────\nPlease select your preferred language below:",
+            'kh' => "🌐 <b>ជ្រើសរើសភាសា / SELECT LANGUAGE</b>\n────────────────────\nសូមជ្រើសរើសភាសាដែលអ្នកពេញចិត្ត៖"
         ],
         'lang_set_kh' => [
             'en' => "🇰🇭 <b>បានជ្រើសរើស ភាសាខ្មែរ រួចរាល់ហើយ!</b>\n────────────────────\nឥឡូវនេះ ប្រព័ន្ធនឹងឆ្លើយតបជាភាសាខ្មែរ។\n\nតើមានអ្វីឱ្យយើងខ្ញុំជួយដែរឬទេ?",
