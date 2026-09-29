@@ -1221,11 +1221,8 @@ function flushPendingCustomerMessages($forceDelaySeconds = 1) {
         $formattedDate = date('d M Y | h:i A');
 
         if ($isCvSubmission) {
-            $ticketHeader = "👤 <b>Candidate:</b> {$contactDisplay}\n"
-                          . (!empty($combinedText) ? $combinedText . "\n" : "")
-                          . "──────────────\n"
-                          . "📅 <b>Date:</b> {$formattedDate}\n"
-                          . "⏳ <b>Status:</b> <b>PENDING REVIEW</b>";
+            $ticketHeader = "👤 <b>Candidate:</b> {$contactDisplay}"
+                          . (!empty($combinedText) ? "\n" . $combinedText : "");
 
             $ticketBtn = [
                 'inline_keyboard' => [
