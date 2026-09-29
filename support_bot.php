@@ -575,15 +575,13 @@ function getI18nKeyboard($key, $lang = 'en') {
     }
 
     if ($key === 'faq_menu') {
-        $mapUrl = getenv('OFFICE_MAP_URL') ?: ($_ENV['OFFICE_MAP_URL'] ?? 'https://maps.app.goo.gl/LP7KziVkBsDzGSTx9');
         return [
             'inline_keyboard' => [
                 [
                     ['text' => ($lang === 'kh' ? '📋 ឱកាសការងារ' : '📋 Job Openings'), 'callback_data' => 'faq_jobs']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '📍 ទីតាំងការិយាល័យ' : '📍 Office Location'), 'url' => $mapUrl],
-                    ['text' => ($lang === 'kh' ? '⏰ ម៉ោងធ្វើការ' : '⏰ Working Hours'), 'callback_data' => 'faq_hours']
+                    ['text' => ($lang === 'kh' ? '📍 ទីតាំងការិយាល័យ' : '📍 Office Location'), 'callback_data' => 'faq_location']
                 ],
                 [
                     ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
@@ -1851,16 +1849,6 @@ function processSupportBotUpdate($update) {
                     editMessageText($userChatId, $msgId, getI18nText('faq_jobs', $userLang), getI18nKeyboard('faq_jobs_sub_menu', $userLang));
                 } else {
                     sendMessage($userChatId, getI18nText('faq_jobs', $userLang), getI18nKeyboard('faq_jobs_sub_menu', $userLang));
-                }
-                return;
-            }
-
-            if ($cbData === 'faq_hours') {
-                answerCallbackQuery($cbId, $userLang === 'kh' ? "⏰ ម៉ោងធ្វើការ" : "⏰ Working Hours");
-                if ($msgId) {
-                    editMessageText($userChatId, $msgId, getI18nText('faq_hours', $userLang), getI18nKeyboard('faq_sub_menu', $userLang));
-                } else {
-                    sendMessage($userChatId, getI18nText('faq_hours', $userLang), getI18nKeyboard('faq_sub_menu', $userLang));
                 }
                 return;
             }
