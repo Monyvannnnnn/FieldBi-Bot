@@ -931,7 +931,7 @@ function editMessageCaption($chatId, $messageId, $caption, $replyMarkup = null) 
 /**
  * Flush and group pending customer messages (default 3 seconds delay for snappy response)
  */
-function flushPendingCustomerMessages($forceDelaySeconds = 5) {
+function flushPendingCustomerMessages($forceDelaySeconds = 1) {
     global $pdo, $conn, $driver;
 
     if (isset($driver) && $driver === 'pgsql' && $pdo) {
@@ -1170,6 +1170,15 @@ function flushPendingCustomerMessages($forceDelaySeconds = 5) {
                     $mapStmt = mysqli_prepare($conn, "INSERT IGNORE INTO group_messages (group_chat_id, group_message_id, customer_chat_id) VALUES (?, ?, ?)");
                     mysqli_stmt_bind_param($mapStmt, "sis", $gId, $groupMessageId, $chatId);
                     mysqli_stmt_execute($mapStmt);
+                }
+            } elseif (isset($apiRes['error_code']) && $apiRes['error_code'] == 403) {
+                // Auto-deactivate group if bot was kicked
+                if (isset($driver) && $driver === 'pgsql' && $pdo) {
+                    $pdo->prepare("UPDATE support_groups SET is_active = 0 WHERE group_chat_id = ?")->execute([$gId]);
+                } elseif (isset($conn) && $conn) {
+                    $stmt = mysqli_prepare($conn, "UPDATE support_groups SET is_active = 0 WHERE group_chat_id = ?");
+                    mysqli_stmt_bind_param($stmt, "s", $gId);
+                    mysqli_stmt_execute($stmt);
                 }
             }
         }
