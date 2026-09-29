@@ -2512,7 +2512,7 @@ function processSupportBotUpdate($update) {
             }
 
             if ($isCvMessage) {
-                sendMessage($chatId, getI18nText('cv_received', $userLang, ['name' => htmlspecialchars($customerName)]));
+                sendMenuMessageAndCleanup($chatId, getI18nText('cv_received', $userLang, ['name' => htmlspecialchars($customerName)]), getI18nKeyboard('welcome', $userLang));
             } else {
 
                 // Send auto-acknowledgment ONLY once per 15-minute conversation window
