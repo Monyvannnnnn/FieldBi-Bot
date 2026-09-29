@@ -1227,8 +1227,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 1) {
             $ticketBtn = [
                 'inline_keyboard' => [
                     [
-                        ['text' => '📄 Contact Candidate', 'url' => $contactUrl],
-                        ['text' => '👤 Handle Request', 'callback_data' => "claim_{$convId}"]
+                        ['text' => 'Contact', 'url' => $contactUrl]
                     ],
                     [
                         ['text' => '⭐ Shortlist & Interview', 'callback_data' => "hr_interview_{$convId}"],
@@ -1705,7 +1704,7 @@ function processSupportBotUpdate($update) {
                 $updatedBtn = [
                     'inline_keyboard' => [
                         [
-                            ['text' => '📄 Contact Candidate', 'url' => $contactUrl],
+                            ['text' => 'Contact', 'url' => $contactUrl],
                             ['text' => '❌ Declined', 'callback_data' => 'claimed']
                         ]
                     ]
@@ -1836,7 +1835,7 @@ function processSupportBotUpdate($update) {
                     $updatedBtn = [
                         'inline_keyboard' => [
                             [
-                                ['text' => '📄 Contact Candidate', 'url' => $contactUrl],
+                                ['text' => 'Contact', 'url' => $contactUrl],
                                 ['text' => '✅ Interview Invited', 'callback_data' => 'claimed']
                             ]
                         ]
