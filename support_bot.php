@@ -420,6 +420,27 @@ function sendMenuMessageAndCleanup($chatId, $text, $replyMarkup = null) {
 }
 
 /**
+ * Edit an existing menu card in-place if present, or send a new clean menu card with fallback.
+ * Guarantees smooth menu transitions on inline button clicks.
+ */
+function editOrSendMenuCard($chatId, $msgId, $text, $replyMarkup = null) {
+    if (!isValidChatId($chatId)) return null;
+
+    if (!empty($msgId)) {
+        setLastMenuMsgId($chatId, $msgId);
+        $editRes = editMessageText($chatId, $msgId, $text, $replyMarkup);
+        if (!empty($editRes['ok'])) {
+            return $editRes;
+        }
+        if (isset($editRes['description']) && strpos($editRes['description'], 'message is not modified') !== false) {
+            return $editRes;
+        }
+    }
+
+    return sendMenuMessageAndCleanup($chatId, $text, $replyMarkup);
+}
+
+/**
  * Set current user workflow mode (e.g., 'submit_cv', 'ask_question', 'general')
  */
 function setUserMode($chatId, $mode) {
@@ -1851,12 +1872,7 @@ function processSupportBotUpdate($update) {
             $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'general');
             answerCallbackQuery($cbId, "🏠 Main Menu");
-            if ($msgId) {
-                setLastMenuMsgId($userChatId, $msgId);
-                editMessageText($userChatId, $msgId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
-            } else {
-                sendMenuMessageAndCleanup($userChatId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
-            }
+            editOrSendMenuCard($userChatId, $msgId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
             return;
         }
 
@@ -1866,12 +1882,7 @@ function processSupportBotUpdate($update) {
             $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'submit_cv');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "📄 បានជ្រើសរើស: ដាក់ពាក្យ CV" : "📄 Option selected: Submit CV");
-            if ($msgId) {
-                setLastMenuMsgId($userChatId, $msgId);
-                editMessageText($userChatId, $msgId, getI18nText('submit_cv_prompt', $userLang), getI18nKeyboard('submit_cv', $userLang));
-            } else {
-                sendMenuMessageAndCleanup($userChatId, getI18nText('submit_cv_prompt', $userLang), getI18nKeyboard('submit_cv', $userLang));
-            }
+            editOrSendMenuCard($userChatId, $msgId, getI18nText('submit_cv_prompt', $userLang), getI18nKeyboard('submit_cv', $userLang));
             return;
         }
 
@@ -1881,12 +1892,7 @@ function processSupportBotUpdate($update) {
             $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'general');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "❌ បានលុបចោល" : "❌ Cancelled");
-            if ($msgId) {
-                setLastMenuMsgId($userChatId, $msgId);
-                editMessageText($userChatId, $msgId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
-            } else {
-                sendMenuMessageAndCleanup($userChatId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
-            }
+            editOrSendMenuCard($userChatId, $msgId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
             return;
         }
 
@@ -1896,12 +1902,7 @@ function processSupportBotUpdate($update) {
             $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'ask_question');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "💬 បានជ្រើសរើស: សួរសំណួរ" : "💬 Option selected: Ask Question");
-            if ($msgId) {
-                setLastMenuMsgId($userChatId, $msgId);
-                editMessageText($userChatId, $msgId, getI18nText('ask_question_prompt', $userLang), getI18nKeyboard('ask_question', $userLang));
-            } else {
-                sendMenuMessageAndCleanup($userChatId, getI18nText('ask_question_prompt', $userLang), getI18nKeyboard('ask_question', $userLang));
-            }
+            editOrSendMenuCard($userChatId, $msgId, getI18nText('ask_question_prompt', $userLang), getI18nKeyboard('ask_question', $userLang));
             return;
         }
 
@@ -1912,34 +1913,19 @@ function processSupportBotUpdate($update) {
 
             if ($cbData === 'menu_faq') {
                 answerCallbackQuery($cbId, $userLang === 'kh' ? "❓ សំណួរដែលសួរញឹកញាប់" : "❓ Frequently Asked Questions");
-                if ($msgId) {
-                    setLastMenuMsgId($userChatId, $msgId);
-                    editMessageText($userChatId, $msgId, getI18nText('faq_menu', $userLang), getI18nKeyboard('faq_menu', $userLang));
-                } else {
-                    sendMenuMessageAndCleanup($userChatId, getI18nText('faq_menu', $userLang), getI18nKeyboard('faq_menu', $userLang));
-                }
+                editOrSendMenuCard($userChatId, $msgId, getI18nText('faq_menu', $userLang), getI18nKeyboard('faq_menu', $userLang));
                 return;
             }
 
             if ($cbData === 'faq_location') {
                 answerCallbackQuery($cbId, $userLang === 'kh' ? "📍 ទីតាំងការិយាល័យ" : "📍 Office Location");
-                if ($msgId) {
-                    setLastMenuMsgId($userChatId, $msgId);
-                    editMessageText($userChatId, $msgId, getI18nText('faq_location', $userLang), getI18nKeyboard('faq_sub_menu', $userLang));
-                } else {
-                    sendMenuMessageAndCleanup($userChatId, getI18nText('faq_location', $userLang), getI18nKeyboard('faq_sub_menu', $userLang));
-                }
+                editOrSendMenuCard($userChatId, $msgId, getI18nText('faq_location', $userLang), getI18nKeyboard('faq_sub_menu', $userLang));
                 return;
             }
 
             if ($cbData === 'faq_jobs') {
                 answerCallbackQuery($cbId, $userLang === 'kh' ? "📋 ឱកាសការងារ" : "📋 Job Openings");
-                if ($msgId) {
-                    setLastMenuMsgId($userChatId, $msgId);
-                    editMessageText($userChatId, $msgId, getI18nText('faq_jobs', $userLang), getI18nKeyboard('faq_jobs_sub_menu', $userLang));
-                } else {
-                    sendMenuMessageAndCleanup($userChatId, getI18nText('faq_jobs', $userLang), getI18nKeyboard('faq_jobs_sub_menu', $userLang));
-                }
+                editOrSendMenuCard($userChatId, $msgId, getI18nText('faq_jobs', $userLang), getI18nKeyboard('faq_jobs_sub_menu', $userLang));
                 return;
             }
             return;
@@ -1950,12 +1936,7 @@ function processSupportBotUpdate($update) {
             $msgId      = $cb["message"]["message_id"] ?? null;
             $userLang   = getUserLang($userChatId);
             answerCallbackQuery($cbId, "🌐 Select Language / ជ្រើសរើសភាសា");
-            if ($msgId) {
-                setLastMenuMsgId($userChatId, $msgId);
-                editMessageText($userChatId, $msgId, getI18nText('lang_prompt', $userLang), getI18nKeyboard('lang_menu', $userLang));
-            } else {
-                sendMenuMessageAndCleanup($userChatId, getI18nText('lang_prompt', $userLang), getI18nKeyboard('lang_menu', $userLang));
-            }
+            editOrSendMenuCard($userChatId, $msgId, getI18nText('lang_prompt', $userLang), getI18nKeyboard('lang_menu', $userLang));
             return;
         }
 
@@ -1964,12 +1945,7 @@ function processSupportBotUpdate($update) {
             $msgId      = $cb["message"]["message_id"] ?? null;
             setUserLang($userChatId, 'kh');
             answerCallbackQuery($cbId, "🇰🇭 បានជ្រើសរើស ភាសាខ្មែរ!");
-            if ($msgId) {
-                setLastMenuMsgId($userChatId, $msgId);
-                editMessageText($userChatId, $msgId, getI18nText('welcome', 'kh'), getI18nKeyboard('welcome', 'kh'));
-            } else {
-                sendMenuMessageAndCleanup($userChatId, getI18nText('welcome', 'kh'), getI18nKeyboard('welcome', 'kh'));
-            }
+            editOrSendMenuCard($userChatId, $msgId, getI18nText('welcome', 'kh'), getI18nKeyboard('welcome', 'kh'));
             return;
         }
 
@@ -1978,12 +1954,7 @@ function processSupportBotUpdate($update) {
             $msgId      = $cb["message"]["message_id"] ?? null;
             setUserLang($userChatId, 'en');
             answerCallbackQuery($cbId, "🇬🇧 Language set to English!");
-            if ($msgId) {
-                setLastMenuMsgId($userChatId, $msgId);
-                editMessageText($userChatId, $msgId, getI18nText('welcome', 'en'), getI18nKeyboard('welcome', 'en'));
-            } else {
-                sendMenuMessageAndCleanup($userChatId, getI18nText('welcome', 'en'), getI18nKeyboard('welcome', 'en'));
-            }
+            editOrSendMenuCard($userChatId, $msgId, getI18nText('welcome', 'en'), getI18nKeyboard('welcome', 'en'));
             return;
         }
 
