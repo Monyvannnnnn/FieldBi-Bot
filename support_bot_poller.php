@@ -112,12 +112,14 @@ while (true) {
         // Suppress & silently recover connection on next loop iteration
     }
 
-    // Auto-escalate unanswered tickets waiting for 5+ minutes (300 seconds)
+    // Auto-escalate unanswered tickets waiting for 5+ minutes (300 seconds) - DISABLED per user request
+    /*
     try {
         checkAndEscalateUnansweredTickets(300);
     } catch (Throwable $e) {
         // Suppress
     }
+    */
 
     // Ultra-short sleep for instant 1-click response time
     usleep(100000); // 0.1s delay

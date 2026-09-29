@@ -1225,9 +1225,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 1) {
                           . (!empty($combinedText) ? $combinedText . "\n" : "")
                           . "──────────────\n"
                           . "📅 <b>Date:</b> {$formattedDate}\n"
-                          . "⏳ <b>Status:</b> <b>PENDING REVIEW</b>\n"
-                          . "──────────────\n"
-                          . "💡 <i>Use HR action buttons below to process candidate.</i>";
+                          . "⏳ <b>Status:</b> <b>PENDING REVIEW</b>";
 
             $ticketBtn = [
                 'inline_keyboard' => [
@@ -1342,6 +1340,8 @@ function flushPendingCustomerMessages($forceDelaySeconds = 1) {
  * Check for unanswered pending tickets waiting for more than X seconds (default 5 minutes / 300s) and send escalation alert to support groups.
  */
 function checkAndEscalateUnansweredTickets($maxPendingSeconds = 300) {
+    // Disabled: Auto escalation alert for unanswered tickets has been turned off.
+    return;
     global $pdo, $conn, $driver;
     static $lastEscalationCheck = 0;
 
