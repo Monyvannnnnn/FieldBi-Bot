@@ -423,12 +423,12 @@ function sendMenuMessageAndCleanup($chatId, $text, $replyMarkup = null) {
  * Edit an existing menu card in-place if present, or send a new clean menu card if missing.
  * Prevents message deletion flickering on Telegram Desktop when navigating buttons.
  */
-function editOrSendMenuCard($chatId, $msgId, $text, $replyMarkup = null) {
+function editOrSendMenuCard($chatId, $msgId, $text, $replyMarkup = null, $disableWebPagePreview = false) {
     if (!isValidChatId($chatId)) return null;
 
     if (!empty($msgId)) {
         setLastMenuMsgId($chatId, $msgId);
-        $editRes = editMessageText($chatId, $msgId, $text, $replyMarkup);
+        $editRes = editMessageText($chatId, $msgId, $text, $replyMarkup, $disableWebPagePreview);
 
         // If edit succeeded or message content/markup is already up to date, return cleanly (0 flicker!)
         if (!empty($editRes['ok']) || (isset($editRes['description']) && strpos($editRes['description'], 'message is not modified') !== false)) {
@@ -437,7 +437,7 @@ function editOrSendMenuCard($chatId, $msgId, $text, $replyMarkup = null) {
     }
 
     // Fallback: send fresh menu card without deletion flicker if message is missing
-    $res = sendMessage($chatId, $text, $replyMarkup);
+    $res = sendMessage($chatId, $text, $replyMarkup, $disableWebPagePreview);
     if (!empty($res['result']['message_id'])) {
         setLastMenuMsgId($chatId, $res['result']['message_id']);
     }
@@ -1014,7 +1014,7 @@ function answerCallbackQuery($callbackQueryId, $text = '', $showAlert = false) {
 /**
  * Edit message text in Telegram chat
  */
-function editMessageText($chatId, $messageId, $text, $replyMarkup = null, $disableWebPagePreview = true) {
+function editMessageText($chatId, $messageId, $text, $replyMarkup = null, $disableWebPagePreview = false) {
     if (!isValidChatId($chatId)) return null;
     $url = "https://api.telegram.org/bot" . BOT_TOKEN . "/editMessageText";
     $postFields = [
@@ -1022,9 +1022,11 @@ function editMessageText($chatId, $messageId, $text, $replyMarkup = null, $disab
         'message_id'               => $messageId,
         'text'                     => $text,
         'parse_mode'               => 'HTML',
-        'disable_web_page_preview' => $disableWebPagePreview ? 'true' : 'false',
-        'link_preview_options'     => json_encode(['is_disabled' => true])
+        'disable_web_page_preview' => $disableWebPagePreview ? 'true' : 'false'
     ];
+    if ($disableWebPagePreview) {
+        $postFields['link_preview_options'] = json_encode(['is_disabled' => true]);
+    }
     if ($replyMarkup !== null) {
         $postFields['reply_markup'] = is_array($replyMarkup) ? json_encode($replyMarkup) : $replyMarkup;
     }
