@@ -584,6 +584,34 @@ function getI18nKeyboard($key, $lang = 'en') {
                 [
                     ['text' => ($lang === 'kh' ? '📍 ទីតាំងការិយាល័យ' : '📍 Office Location'), 'url' => $mapUrl],
                     ['text' => ($lang === 'kh' ? '⏰ ម៉ោងធ្វើការ' : '⏰ Working Hours'), 'callback_data' => 'faq_hours']
+                ],
+                [
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
+                ]
+            ]
+        ];
+    }
+
+    if ($key === 'faq_sub_menu') {
+        return [
+            'inline_keyboard' => [
+                [
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅ FAQ' : '🔙 Back to FAQ'), 'callback_data' => 'menu_faq'],
+                    ['text' => ($lang === 'kh' ? '🏠 ម៉ឺនុយដើម' : '🏠 Main Menu'), 'callback_data' => 'menu_welcome']
+                ]
+            ]
+        ];
+    }
+
+    if ($key === 'faq_jobs_sub_menu') {
+        return [
+            'inline_keyboard' => [
+                [
+                    ['text' => ($lang === 'kh' ? '📄 ដាក់ពាក្យ CV ឥឡូវនេះ' : '📄 Submit CV Now'), 'callback_data' => 'menu_submit_cv']
+                ],
+                [
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅ FAQ' : '🔙 Back to FAQ'), 'callback_data' => 'menu_faq'],
+                    ['text' => ($lang === 'kh' ? '🏠 ម៉ឺនុយដើម' : '🏠 Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -595,6 +623,9 @@ function getI18nKeyboard($key, $lang = 'en') {
             'inline_keyboard' => [
                 [
                     ['text' => ($lang === 'kh' ? '👤 ទាក់ទង Human Support ផ្ទាល់' : '👤 Contact Our Human Support'), 'url' => $contactUrl]
+                ],
+                [
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -606,6 +637,9 @@ function getI18nKeyboard($key, $lang = 'en') {
                 [
                     ['text' => ($lang === 'kh' ? '❌ លុបចោល' : '❌ Cancel'), 'callback_data' => 'menu_cancel_cv'],
                     ['text' => ($lang === 'kh' ? '💬 សួរសំណួរ' : '💬 Ask Question Instead'), 'callback_data' => 'menu_ask_question']
+                ],
+                [
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -617,6 +651,9 @@ function getI18nKeyboard($key, $lang = 'en') {
                 [
                     ['text' => '🇰🇭 ភាសាខ្មែរ (Khmer)', 'callback_data' => 'lang_kh'],
                     ['text' => '🇬🇧 English', 'callback_data' => 'lang_en']
+                ],
+                [
+                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -1727,87 +1764,145 @@ function processSupportBotUpdate($update) {
             return;
         }
 
+        if ($cbData === 'menu_welcome') {
+            $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $msgId      = $cb["message"]["message_id"] ?? null;
+            $userLang   = getUserLang($userChatId);
+            setUserMode($userChatId, 'general');
+            answerCallbackQuery($cbId, "🏠 Main Menu");
+            if ($msgId) {
+                editMessageText($userChatId, $msgId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
+            } else {
+                sendMessage($userChatId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
+            }
+            return;
+        }
+
         if ($cbData === 'menu_submit_cv') {
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $msgId      = $cb["message"]["message_id"] ?? null;
             $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'submit_cv');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "📄 បានជ្រើសរើស: ដាក់ពាក្យ CV" : "📄 Option selected: Submit CV");
-            sendMessage($userChatId, getI18nText('submit_cv_prompt', $userLang), getI18nKeyboard('submit_cv', $userLang));
+            if ($msgId) {
+                editMessageText($userChatId, $msgId, getI18nText('submit_cv_prompt', $userLang), getI18nKeyboard('submit_cv', $userLang));
+            } else {
+                sendMessage($userChatId, getI18nText('submit_cv_prompt', $userLang), getI18nKeyboard('submit_cv', $userLang));
+            }
             return;
         }
 
         if ($cbData === 'menu_cancel_cv') {
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $msgId      = $cb["message"]["message_id"] ?? null;
             $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'general');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "❌ បានលុបចោល" : "❌ Cancelled");
-            $cancelMsg = $userLang === 'kh'
-                ? "❌ <b>បានលុបចោល!</b>\n\nអ្នកបានចាកចេញពីទម្រង់ផ្ញើ CV ហើយ។ អ្នកអាចវាយបញ្ជូនសារ ឬសំណួររបស់អ្នកនៅទីនេះបាន។"
-                : "❌ <b>Cancelled!</b>\n\nYou have exited CV submission mode. Feel free to send any message or question below!";
-            sendMessage($userChatId, $cancelMsg, getI18nKeyboard('welcome', $userLang));
+            if ($msgId) {
+                editMessageText($userChatId, $msgId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
+            } else {
+                sendMessage($userChatId, getI18nText('welcome', $userLang), getI18nKeyboard('welcome', $userLang));
+            }
             return;
         }
 
         if ($cbData === 'menu_ask_question') {
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $msgId      = $cb["message"]["message_id"] ?? null;
             $userLang   = getUserLang($userChatId);
             setUserMode($userChatId, 'ask_question');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "💬 បានជ្រើសរើស: សួរសំណួរ" : "💬 Option selected: Ask Question");
-            sendMessage($userChatId, getI18nText('ask_question_prompt', $userLang), getI18nKeyboard('ask_question', $userLang));
+            if ($msgId) {
+                editMessageText($userChatId, $msgId, getI18nText('ask_question_prompt', $userLang), getI18nKeyboard('ask_question', $userLang));
+            } else {
+                sendMessage($userChatId, getI18nText('ask_question_prompt', $userLang), getI18nKeyboard('ask_question', $userLang));
+            }
             return;
         }
 
         if (strpos($cbData, 'faq_') === 0 || $cbData === 'menu_faq') {
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $msgId      = $cb["message"]["message_id"] ?? null;
             $userLang   = getUserLang($userChatId);
+
             if ($cbData === 'menu_faq') {
                 answerCallbackQuery($cbId, $userLang === 'kh' ? "❓ សំណួរដែលសួរញឹកញាប់" : "❓ Frequently Asked Questions");
-                sendMessage($userChatId, getI18nText('faq_menu', $userLang), getI18nKeyboard('faq_menu', $userLang));
+                if ($msgId) {
+                    editMessageText($userChatId, $msgId, getI18nText('faq_menu', $userLang), getI18nKeyboard('faq_menu', $userLang));
+                } else {
+                    sendMessage($userChatId, getI18nText('faq_menu', $userLang), getI18nKeyboard('faq_menu', $userLang));
+                }
                 return;
             }
 
             if ($cbData === 'faq_location') {
-                $mapUrl = getenv('OFFICE_MAP_URL') ?: ($_ENV['OFFICE_MAP_URL'] ?? 'https://maps.google.com/?q=Olympia+City+Phnom+Penh+Cambodia');
-                $mapBtn = [
-                    'inline_keyboard' => [
-                        [
-                            ['text' => ($userLang === 'kh' ? '🗺️ បើកមើលក្នុង Google Maps' : '🗺️ Open in Google Maps'), 'url' => $mapUrl]
-                        ]
-                    ]
-                ];
-                answerCallbackQuery($cbId, $userLang === 'kh' ? "បានទាញយកចម្លើយ" : "Answer loaded");
-                sendMessage($userChatId, getI18nText('faq_location', $userLang), $mapBtn);
+                answerCallbackQuery($cbId, $userLang === 'kh' ? "📍 ទីតាំងការិយាល័យ" : "📍 Office Location");
+                if ($msgId) {
+                    editMessageText($userChatId, $msgId, getI18nText('faq_location', $userLang), getI18nKeyboard('faq_sub_menu', $userLang));
+                } else {
+                    sendMessage($userChatId, getI18nText('faq_location', $userLang), getI18nKeyboard('faq_sub_menu', $userLang));
+                }
                 return;
             }
 
-            if (in_array($cbData, ['faq_jobs', 'faq_hours'])) {
-                answerCallbackQuery($cbId, $userLang === 'kh' ? "បានទាញយកចម្លើយ" : "Answer loaded");
-                sendMessage($userChatId, getI18nText($cbData, $userLang));
+            if ($cbData === 'faq_jobs') {
+                answerCallbackQuery($cbId, $userLang === 'kh' ? "📋 ឱកាសការងារ" : "📋 Job Openings");
+                if ($msgId) {
+                    editMessageText($userChatId, $msgId, getI18nText('faq_jobs', $userLang), getI18nKeyboard('faq_jobs_sub_menu', $userLang));
+                } else {
+                    sendMessage($userChatId, getI18nText('faq_jobs', $userLang), getI18nKeyboard('faq_jobs_sub_menu', $userLang));
+                }
+                return;
+            }
+
+            if ($cbData === 'faq_hours') {
+                answerCallbackQuery($cbId, $userLang === 'kh' ? "⏰ ម៉ោងធ្វើការ" : "⏰ Working Hours");
+                if ($msgId) {
+                    editMessageText($userChatId, $msgId, getI18nText('faq_hours', $userLang), getI18nKeyboard('faq_sub_menu', $userLang));
+                } else {
+                    sendMessage($userChatId, getI18nText('faq_hours', $userLang), getI18nKeyboard('faq_sub_menu', $userLang));
+                }
+                return;
             }
             return;
         }
 
         if ($cbData === 'menu_lang') {
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $msgId      = $cb["message"]["message_id"] ?? null;
             $userLang   = getUserLang($userChatId);
             answerCallbackQuery($cbId, "🌐 Select Language / ជ្រើសរើសភាសា");
-            sendMessage($userChatId, getI18nText('lang_prompt', $userLang), getI18nKeyboard('lang_menu', $userLang));
+            if ($msgId) {
+                editMessageText($userChatId, $msgId, getI18nText('lang_prompt', $userLang), getI18nKeyboard('lang_menu', $userLang));
+            } else {
+                sendMessage($userChatId, getI18nText('lang_prompt', $userLang), getI18nKeyboard('lang_menu', $userLang));
+            }
             return;
         }
 
         if ($cbData === 'lang_kh') {
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $msgId      = $cb["message"]["message_id"] ?? null;
             setUserLang($userChatId, 'kh');
             answerCallbackQuery($cbId, "🇰🇭 បានជ្រើសរើស ភាសាខ្មែរ!");
-            sendMessage($userChatId, getI18nText('lang_set_kh', 'kh'), getI18nKeyboard('welcome', 'kh'));
+            if ($msgId) {
+                editMessageText($userChatId, $msgId, getI18nText('welcome', 'kh'), getI18nKeyboard('welcome', 'kh'));
+            } else {
+                sendMessage($userChatId, getI18nText('welcome', 'kh'), getI18nKeyboard('welcome', 'kh'));
+            }
             return;
         }
 
         if ($cbData === 'lang_en') {
             $userChatId = (string)($cb["message"]["chat"]["id"] ?? $agentId);
+            $msgId      = $cb["message"]["message_id"] ?? null;
             setUserLang($userChatId, 'en');
             answerCallbackQuery($cbId, "🇬🇧 Language set to English!");
-            sendMessage($userChatId, getI18nText('lang_set_en', 'en'), getI18nKeyboard('welcome', 'en'));
+            if ($msgId) {
+                editMessageText($userChatId, $msgId, getI18nText('welcome', 'en'), getI18nKeyboard('welcome', 'en'));
+            } else {
+                sendMessage($userChatId, getI18nText('welcome', 'en'), getI18nKeyboard('welcome', 'en'));
+            }
             return;
         }
 
