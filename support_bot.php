@@ -1221,9 +1221,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 1) {
         $formattedDate = date('d M Y | h:i A');
 
         if ($isCvSubmission) {
-            $ticketHeader = "📄 <b>HR RECRUITMENT TICKET #{$convId}</b>\n"
-                          . "──────────────\n"
-                          . "👤 <b>Candidate:</b> {$contactDisplay}\n"
+            $ticketHeader = "👤 <b>Candidate:</b> {$contactDisplay}\n"
                           . (!empty($combinedText) ? $combinedText . "\n" : "")
                           . "──────────────\n"
                           . "📅 <b>Date:</b> {$formattedDate}\n"
@@ -1244,9 +1242,7 @@ function flushPendingCustomerMessages($forceDelaySeconds = 1) {
                 ]
             ];
         } else {
-            $ticketHeader = "🎫 <b>SUPPORT TICKET #{$convId}</b>\n"
-                          . "──────────────\n"
-                          . "👤 <b>From:</b> {$contactDisplay}\n"
+            $ticketHeader = "👤 <b>From:</b> {$contactDisplay}\n"
                           . (!empty($combinedText) ? $combinedText . "\n" : "")
                           . "──────────────\n"
                           . "📅 <b>Date:</b> {$formattedDate}\n"
@@ -1427,20 +1423,16 @@ function checkAndEscalateUnansweredTickets($maxPendingSeconds = 300) {
                 $contactDisplay = "{$userLink} (ID: <code>{$chatId}</code>)";
             }
 
-            $alertMsg = "🚨 <b>UNANSWERED TICKET ESCALATION ALERT!</b>\n"
-                      . "──────────────\n"
-                      . "🎫 <b>Ticket ID:</b> #{$convId}\n"
-                      . "👤 <b>Customer:</b> {$contactDisplay}\n"
+            $alertMsg = "👤 <b>Customer:</b> {$contactDisplay}\n"
                       . "⏳ <b>Waiting Time:</b> <b>{$pendingMin}+ minutes</b>\n"
                       . "⏰ <b>Status:</b> <b>UNANSWERED (PENDING)</b>\n"
                       . "──────────────\n"
-                      . "⚠️ <i>Support Agents, please claim or reply to Ticket #{$convId} immediately!</i>";
+                      . "⚠️ <i>Support Agents, please claim or reply immediately!</i>";
 
             $claimBtn = [
                 'inline_keyboard' => [
                     [
-                        ['text' => '💬 Contact Customer', 'url' => $contactUrl],
-                        ['text' => '👤 Handle Ticket #' . $convId, 'callback_data' => "claim_{$convId}"]
+                        ['text' => '💬 Contact Customer', 'url' => $contactUrl]
                     ]
                 ]
             ];
@@ -1567,9 +1559,7 @@ function processSupportBotUpdate($update) {
                     }
 
                     $actionDate = date('d M Y | h:i A');
-                    $updatedCard = "🎫 <b>SUPPORT TICKET #{$convId}</b>\n"
-                                 . "──────────────\n"
-                                 . "👤 <b>From:</b> {$contactDisplay}\n"
+                    $updatedCard = "👤 <b>From:</b> {$contactDisplay}\n"
                                  . (!empty($messageContent) ? "💬 <b>Details:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "")
                                  . "──────────────\n"
                                  . "📅 <b>Date:</b> {$actionDate}\n"
@@ -1707,9 +1697,7 @@ function processSupportBotUpdate($update) {
                 }
 
                 $actionDate = date('d M Y | h:i A');
-                $updatedCard = "📄 <b>HR RECRUITMENT TICKET #{$convId}</b>\n"
-                             . "──────────────\n"
-                             . "👤 <b>Candidate:</b> {$contactDisplay}\n"
+                $updatedCard = "👤 <b>Candidate:</b> {$contactDisplay}\n"
                              . (!empty($messageContent) ? "💬 <b>Details:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "")
                              . "──────────────\n"
                              . "📅 <b>Date:</b> {$actionDate}\n"
@@ -1840,9 +1828,7 @@ function processSupportBotUpdate($update) {
                     }
 
                     $actionDate = date('d M Y | h:i A');
-                    $updatedCard = "📄 <b>HR RECRUITMENT TICKET #{$convId}</b>\n"
-                                 . "──────────────\n"
-                                 . "👤 <b>Candidate:</b> {$contactDisplay}\n"
+                    $updatedCard = "👤 <b>Candidate:</b> {$contactDisplay}\n"
                                  . (!empty($messageContent) ? "💬 <b>Details:</b>\n<blockquote>" . htmlspecialchars($messageContent) . "</blockquote>\n" : "")
                                  . "──────────────\n"
                                  . "📅 <b>Date:</b> {$actionDate}\n"
