@@ -578,9 +578,7 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? '📋 ឱកាសការងារ' : '📋 Job Openings'), 'callback_data' => 'faq_jobs']
-                ],
-                [
+                    ['text' => ($lang === 'kh' ? '📋 ឱកាសការងារ' : '📋 Job Openings'), 'callback_data' => 'faq_jobs'],
                     ['text' => ($lang === 'kh' ? '📍 ទីតាំងការិយាល័យ' : '📍 Office Location'), 'callback_data' => 'faq_location']
                 ],
                 [
