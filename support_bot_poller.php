@@ -17,6 +17,20 @@ $offset = 0;
 
 echo "[" . date('Y-m-d H:i:s') . "] Fast Support Bot Poller started (Auto-Reconnect Enabled) for token: " . substr($botToken, 0, 10) . "...\n";
 
+// Clear any active Telegram Webhook to ensure long polling works cleanly
+$delWhUrl = "https://api.telegram.org/bot{$botToken}/deleteWebhook?drop_pending_updates=false";
+$chDel = curl_init($delWhUrl);
+curl_setopt_array($chDel, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_TIMEOUT => 5,
+    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_SSL_VERIFYHOST => 2,
+    CURLOPT_SSL_OPTIONS    => defined('CURLSSLOPT_NATIVE_CA') ? CURLSSLOPT_NATIVE_CA : 0
+]);
+$delRes = curl_exec($chDel);
+curl_close($chDel);
+echo "[" . date('Y-m-d H:i:s') . "] Initialized Telegram long-polling (Webhook cleared: " . ($delRes ?: 'OK') . ")\n";
+
 // Helper function to maintain active DB connection
 function checkAndReconnectDb() {
     global $pdo, $conn, $driver;
@@ -64,6 +78,12 @@ while (true) {
     if ($rawResponse !== false) {
         $data = json_decode($rawResponse, true);
         
+        if (isset($data['error_code']) && $data['error_code'] == 409) {
+            echo "[" . date('Y-m-d H:i:s') . "] WARNING: 409 Conflict - Another bot poller instance is running with this token! (" . ($data['description'] ?? '') . ")\n";
+            sleep(3);
+            continue;
+        }
+
         if (!empty($data['result'])) {
             foreach ($data['result'] as $up) {
                 $updateId = $up['update_id'];

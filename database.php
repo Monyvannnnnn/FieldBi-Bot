@@ -35,17 +35,32 @@ if ($driver === 'pgsql') {
     $dbName = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? 'postgres');
     $dbUser = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? 'postgres');
     $dbPass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
-    $dbSslMode = getenv('DB_SSLMODE') ?: ($_ENV['DB_SSLMODE'] ?? '');
+    $dbSslMode = getenv('DB_SSLMODE') ?: ($_ENV['DB_SSLMODE'] ?? 'require');
 
     try {
         $dsn = "pgsql:host={$dbHost};port={$dbPort};dbname={$dbName}" . ($dbSslMode ? ";sslmode={$dbSslMode}" : "");
         $pdo = new PDO($dsn, $dbUser, $dbPass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => true,
         ]);
     } catch (PDOException $e) {
-        $pdo = null;
-        error_log("PostgreSQL Connection Warning: " . $e->getMessage());
+        if ($dbSslMode === 'require') {
+            try {
+                $dsnFallback = "pgsql:host={$dbHost};port={$dbPort};dbname={$dbName};sslmode=prefer";
+                $pdo = new PDO($dsnFallback, $dbUser, $dbPass, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => true,
+                ]);
+            } catch (PDOException $e2) {
+                $pdo = null;
+                error_log("PostgreSQL Connection Warning: " . $e2->getMessage());
+            }
+        } else {
+            $pdo = null;
+            error_log("PostgreSQL Connection Warning: " . $e->getMessage());
+        }
     }
 } else {
     // MySQL (XAMPP default)

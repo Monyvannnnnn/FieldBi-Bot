@@ -7,6 +7,8 @@ services:
     region: singapore
     dockerCommand: ./start.sh
     envVars:
+      - key: DISABLE_EMBEDDED_POLLER
+        value: "true"
       - key: DB_DRIVER
         value: pgsql
       - key: DB_HOST
@@ -19,6 +21,8 @@ services:
         sync: false
       - key: DB_PASS
         sync: false
+      - key: DB_SSLMODE
+        value: require
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_ADMIN_CHAT_ID
@@ -44,6 +48,8 @@ services:
         sync: false
       - key: DB_PASS
         sync: false
+      - key: DB_SSLMODE
+        value: require
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_ADMIN_CHAT_ID
