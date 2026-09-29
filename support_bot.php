@@ -489,60 +489,56 @@ function getUserLang($chatId) {
 function getI18nText($key, $lang = 'en', $params = []) {
     $translations = [
         'welcome' => [
-            'en' => "👋 <b>Welcome to FieldBi Cambodia Support!</b>\n✨ <i>Technology & Software Solutions Provider</i>\n\n<b>How can we assist you today?</b>\nPlease select an option below or type your message directly:\n\n💡 <i>Tip: You can change language anytime using the button below.</i>",
-            'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន FieldBi Cambodia!</b>\n✨ <i>ដៃគូផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ</i>\n\n<b>តើយើងអាចជួយអ្វីអ្នកបាននៅថ្ងៃនេះ?</b>\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នកផ្ទាល់៖\n\n💡 <i>ចំណាំ៖ អ្នកអាចផ្លាស់ប្តូរភាសាបានគ្រប់ពេលតាមរយៈប៊ូតុងខាងក្រោម។</i>"
+            'en' => "<b>Welcome to FieldBi Support</b>\nTechnology & Software Solutions Provider\n\nHow can we help you today?\nPlease select an option below or send your message directly.",
+            'kh' => "<b>សូមស្វាគមន៍មកកាន់ FieldBi Support</b>\nសេវាកម្មដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ\n\nតើយើងអាចជួយអ្វីអ្នកបាននៅថ្ងៃនេះ?\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នកផ្ទាល់។"
         ],
         'submit_cv_prompt' => [
-            'en' => "📄 <b>SUBMIT CV / RESUME</b>\n\nPlease upload your CV file (<b>PDF, DOC, DOCX, PNG</b>) below.\n\n⏳ <i>Waiting for your CV file upload...</i>",
-            'kh' => "📄 <b>ដាក់ពាក្យស្នើសុំការងារ (CV / RESUME)</b>\n\nសូមបញ្ជូនឯកសារ CV របស់អ្នក (<b>PDF, DOC, DOCX, PNG</b>) នៅខាងក្រោម។\n\n⏳ <i>កំពុងរង់ចាំការផ្ញើឯកសារ CV របស់អ្នក...</i>"
+            'en' => "<b>Submit CV / Resume</b>\n\nPlease upload your CV file (PDF, DOC, DOCX, PNG) below.",
+            'kh' => "<b>ដាក់ពាក្យ CV / Resume</b>\n\nសូមផ្ញើឯកសារ CV របស់អ្នក (PDF, DOC, DOCX, PNG) នៅខាងក្រោម។"
         ],
         'ask_question_prompt' => [
-            'en' => "💬 <b>ASK A QUESTION / HUMAN SUPPORT</b>\n\nPlease type your message or question below, and our support team will assist you shortly!\n\n👤 <i>Or tap the button below to connect directly with our Human Support team.</i>",
-            'kh' => "💬 <b>សួរសំណួរ / ទាក់ទងក្រុមការងារ</b>\n\nសូមវាយបញ្ចូលសារ ឬសំណួររបស់អ្នកនៅខាងក្រោម ក្រុមការងាររបស់យើងនឹងឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ!\n\n👤 <i>ឬចុចប៊ូតុងខាងក្រោមដើម្បីទាក់ទងផ្ទាល់ជាមួយក្រុមការងារ Human Support។</i>"
+            'en' => "<b>Ask a Question</b>\n\nPlease type your message or question below, or tap the button to contact Support directly.",
+            'kh' => "<b>សួរសំណួរ</b>\n\nសូមវាយបញ្ចូលសារ ឬសំណួររបស់អ្នកនៅខាងក្រោម ឬចុចប៊ូតុងខាងក្រោមដើម្បីទាក់ទងផ្ទាល់។"
         ],
         'faq_menu' => [
-            'en' => "❓ <b>FREQUENTLY ASKED QUESTIONS</b>\n\nPlease select a topic below to get instant answers:",
-            'kh' => "❓ <b>សំណួរដែលសួរញឹកញាប់ (FAQ)</b>\n\nសូមជ្រើសរើសប្រធានបទខាងក្រោមដើម្បីទទួលបានចម្លើយភ្លាមៗ៖"
+            'en' => "<b>Frequently Asked Questions</b>\n\nPlease select a topic below:",
+            'kh' => "<b>សំណួរដែលសួរញឹកញាប់</b>\n\nសូមជ្រើសរើសប្រធានបទខាងក្រោម៖"
         ],
         'faq_jobs' => [
-            'en' => "📋 <b>JOB OPENINGS</b>\n\n• <b>Developer</b>\n• <b>Sales Representative</b>\n• <b>Marketing Officer</b>\n\n📄 <i>Tap /Submit_CV to apply directly!</i>",
-            'kh' => "📋 <b>ឱកាសការងារ</b>\n\n• <b>Developer</b>\n• <b>Sales Representative</b>\n• <b>Marketing Officer</b>\n\n📄 <i>ចុច /Submit_CV ដើម្បីដាក់ពាក្យផ្ទាល់!</i>"
+            'en' => "<b>Job Openings</b>\n\n• Developer\n• Sales Representative\n• Marketing Officer",
+            'kh' => "<b>ឱកាសការងារ</b>\n\n• Developer\n• Sales Representative\n• Marketing Officer"
         ],
         'faq_location' => [
-            'en' => "📍 <b>OFFICE LOCATION</b>\n\n🏢 <b>FieldBi Cambodia</b>\n📍 6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">Open Location on Map</a>",
-            'kh' => "📍 <b>ទីតាំងការិយាល័យ</b>\n\n🏢 <b>FieldBi Cambodia</b>\n📍 អគារ C7 ជាន់ទី 6, Olympia City, សង្កាត់វាលវង់, ខណ្ឌ 7 មករា, ភ្នំពេញ\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">ចុចទីនេះដើម្បីមើលលើផែនទី (Google Maps)</a>"
-        ],
-        'faq_hours' => [
-            'en' => "⏰ <b>WORKING HOURS</b>\n\n• <b>Monday – Friday:</b> 8:00 AM – 5:00 PM (ICT)\n• <b>Saturday:</b> 8:00 AM – 12:00 PM\n• <b>Sunday:</b> Closed",
-            'kh' => "⏰ <b>ម៉ោងធ្វើការ</b>\n\n• <b>ច័ន្ទ – សុក្រ:</b> 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n• <b>សៅរ៍:</b> 8:00 ព្រឹក – 12:00 ថ្ងៃត្រង់\n• <b>អាទិត្យ:</b> ឈប់សម្រាក"
+            'en' => "<b>Office Location</b>\n\nFieldBi Cambodia\n6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia\n\n<a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">Open on Google Maps</a>",
+            'kh' => "<b>ទីតាំងការិយាល័យ</b>\n\nFieldBi Cambodia\nអគារ C7 ជាន់ទី 6, Olympia City, សង្កាត់វាលវង់, ខណ្ឌ 7 មករា, ភ្នំពេញ\n\n<a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">មើលលើ Google Maps</a>"
         ],
         'invalid_cv' => [
-            'en' => "⚠️ <b>Invalid CV Format!</b>\n\nPlease upload your CV as a valid file or image (<b>PDF, DOC, DOCX, PNG</b>). Plain text messages are not accepted.\n\n<i>If you wish to cancel or ask a question instead, tap /Ask_Question or /start.</i>",
-            'kh' => "⚠️ <b>ទម្រង់ CV មិនត្រឹមត្រូវ!</b>\n\nសូមផ្ញើ CV ជាឯកសារ ឬរូបថត (<b>PDF, DOC, DOCX, PNG</b>) ប៉ុណ្ណោះ។ មិនទទួលសារអក្សរទទេទេ។\n\n<i>ប្រសិនបើអ្នកចង់លុបចោល ឬសួរសំណួរ សូមចុច /Ask_Question ឬ /start</i>"
+            'en' => "<b>Invalid CV Format</b>\n\nPlease upload your CV as a valid file or photo (PDF, DOC, DOCX, PNG).",
+            'kh' => "<b>ទម្រង់ CV មិនត្រឹមត្រូវ</b>\n\nសូមផ្ញើ CV ជាឯកសារ ឬរូបថត (PDF, DOC, DOCX, PNG)។"
         ],
         'cv_received' => [
-            'en' => "✅ <b>CV Received & Submitted!</b>\n\nThank you, <b>{name}</b>! 📄\n\nOur HR & Recruitment team has received your application and CV details. We will review your profile and reach out to you shortly.\n\n💬 <i>If you need to send additional documents or updates, feel free to send them here anytime.</i>",
-            'kh' => "✅ <b>ទទួលបាន CV រួចរាល់ហើយ!</b>\n\nសូមអរគុណ <b>{name}</b>! 📄\n\nក្រុមការងារធនធានមនុស្ស (HR) របស់យើងបានទទួល CV របស់អ្នកហើយ។ យើងនឹងពិនិត្យមើល និងទាក់ទងទៅអ្នកវិញក្នុងពេលឆាប់ៗនេះ。\n\n💬 <i>ប្រសិនបើអ្នកចង់ផ្ញើឯកសារបន្ថែម អ្នកអាចផ្ញើនៅទីនេះបានគ្រប់ពេល។</i>"
+            'en' => "<b>CV Submitted Successfully</b>\n\nThank you, <b>{name}</b>. Our HR team has received your application and will review it shortly.",
+            'kh' => "<b>ទទួលបាន CV រួចរាល់</b>\n\nសូមអរគុណ <b>{name}</b>។ ក្រុមការងាររបស់យើងបានទទួល CV របស់អ្នកហើយ និងកំពុងពិនិត្យមើល។"
         ],
         'auto_ack_open' => [
-            'en' => "👋 <b>Thank you for contacting FieldBi!</b>\n\nOur support team has received your message and will respond to you shortly.",
-            'kh' => "👋 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ FieldBi!</b>\n\nក្រុមការងាររបស់យើងបានទទួលសាររបស់អ្នកហើយ និងកំពុងរៀបចំឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ।"
+            'en' => "<b>Thank you for contacting FieldBi Support</b>\n\nWe have received your message and will respond shortly.",
+            'kh' => "<b>សូមអរគុណសម្រាប់ការទាក់ទង FieldBi Support</b>\n\nយើងបានទទួលសាររបស់អ្នកហើយ និងកំពុងរៀបចំឆ្លើយតបជូន។"
         ],
         'auto_ack_closed' => [
-            'en' => "🌙 <b>Thank you for contacting FieldBi!</b>\n\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!",
-            'kh' => "🌙 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ FieldBi!</b>\n\nពេលនេះការិយាល័យរបស់យើងត្រូវបានបិទសម្រាក។\n⏰ <b>ម៉ោងធ្វើការ:</b> ច័ន្ទ – សុក្រ, 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n\nសាររបស់អ្នកត្រូវបានកត់ត្រាទុក ហើយក្រុមការងារនឹងឆ្លើយតបភ្លាមៗនៅពេលបើកដំណើរការឡើងវិញ!"
+            'en' => "<b>Thank you for contacting FieldBi Support</b>\n\nOur office is currently closed.\nWorking Hours: Mon – Fri, 8:00 AM – 5:00 PM (ICT)\nWe will respond as soon as we open.",
+            'kh' => "<b>សូមអរគុណសម្រាប់ការទាក់ទង FieldBi Support</b>\n\nពេលនេះការិយាល័យត្រូវបានបិទសម្រាក។\nម៉ោងធ្វើការ៖ ច័ន្ទ – សុក្រ, 8:00 ព្រឹក – 5:00 ល្ងាច\nយើងខ្ញុំនឹងឆ្លើយតបជូនភ្លាមៗនៅពេលបើកដំណើរការឡើងវិញ។"
         ],
         'lang_prompt' => [
-            'en' => "🌐 <b>SELECT LANGUAGE / ជ្រើសរើសភាសា</b>\n\nPlease select your preferred language below:",
-            'kh' => "🌐 <b>ជ្រើសរើសភាសា / SELECT LANGUAGE</b>\n\nសូមជ្រើសរើសភាសាដែលអ្នកពេញចិត្ត៖"
+            'en' => "<b>Select Language / ជ្រើសរើសភាសា</b>\n\nPlease select your preferred language below:",
+            'kh' => "<b>ជ្រើសរើសភាសា / Select Language</b>\n\nសូមជ្រើសរើសភាសាដែលអ្នកពេញចិត្ត៖"
         ],
         'lang_set_kh' => [
-            'en' => "🇰🇭 <b>បានជ្រើសរើស ភាសាខ្មែរ រួចរាល់ហើយ!</b>\n\nឥឡូវនេះ ប្រព័ន្ធនឹងឆ្លើយតបជាភាសាខ្មែរ។\n\nតើមានអ្វីឱ្យយើងខ្ញុំជួយដែរឬទេ?",
-            'kh' => "🇰🇭 <b>បានជ្រើសរើស ភាសាខ្មែរ រួចរាល់ហើយ!</b>\n\nឥឡូវនេះ ប្រព័ន្ធនឹងឆ្លើយតបជាភាសាខ្មែរ។\n\nតើមានអ្វីឱ្យយើងខ្ញុំជួយដែរឬទេ?"
+            'en' => "<b>ភាសាខ្មែរ</b>\n\nប្រព័ន្ធបានកំណត់ជាភាសាខ្មែរ។",
+            'kh' => "<b>ភាសាខ្មែរ</b>\n\nប្រព័ន្ធបានកំណត់ជាភាសាខ្មែរ។"
         ],
         'lang_set_en' => [
-            'en' => "🇬🇧 <b>Language set to English!</b>\n\nThe bot will now respond in English.\n\nHow can we help you today?",
-            'kh' => "🇬🇧 <b>Language set to English!</b>\n\nThe bot will now respond in English.\n\nHow can we help you today?"
+            'en' => "<b>Language: English</b>\n\nThe bot will respond in English.",
+            'kh' => "<b>Language: English</b>\n\nThe bot will respond in English."
         ]
     ];
 
@@ -561,14 +557,14 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? '📄 ដាក់ពាក្យ / CV' : '📄 Submit CV'), 'callback_data' => 'menu_submit_cv'],
-                    ['text' => ($lang === 'kh' ? '💬 សួរសំណួរ' : '💬 Ask Question'), 'callback_data' => 'menu_ask_question']
+                    ['text' => ($lang === 'kh' ? 'ដាក់ពាក្យ CV' : 'Submit CV'), 'callback_data' => 'menu_submit_cv'],
+                    ['text' => ($lang === 'kh' ? 'សួរសំណួរ' : 'Ask Question'), 'callback_data' => 'menu_ask_question']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '❓ សំណួរដែលសួរញឹកញាប់ (FAQ)' : '❓ FAQ & Quick Info'), 'callback_data' => 'menu_faq']
+                    ['text' => ($lang === 'kh' ? 'សំណួរញឹកញាប់ (FAQ)' : 'FAQ & Quick Info'), 'callback_data' => 'menu_faq']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '🌐 ផ្លាស់ប្តូរភាសា (Language)' : '🌐 Change Language'), 'callback_data' => 'menu_lang']
+                    ['text' => ($lang === 'kh' ? 'ផ្លាស់ប្តូរភាសា' : 'Change Language'), 'callback_data' => 'menu_lang']
                 ]
             ]
         ];
@@ -578,11 +574,11 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? '📋 ឱកាសការងារ' : '📋 Job Openings'), 'callback_data' => 'faq_jobs'],
-                    ['text' => ($lang === 'kh' ? '📍 ទីតាំងការិយាល័យ' : '📍 Office Location'), 'callback_data' => 'faq_location']
+                    ['text' => ($lang === 'kh' ? 'ឱកាសការងារ' : 'Job Openings'), 'callback_data' => 'faq_jobs'],
+                    ['text' => ($lang === 'kh' ? 'ទីតាំងការិយាល័យ' : 'Office Location'), 'callback_data' => 'faq_location']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅម៉ឺនុយដើម' : 'Back to Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -592,8 +588,8 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅ FAQ' : '🔙 Back to FAQ'), 'callback_data' => 'menu_faq'],
-                    ['text' => ($lang === 'kh' ? '🏠 ម៉ឺនុយដើម' : '🏠 Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅ FAQ' : 'Back to FAQ'), 'callback_data' => 'menu_faq'],
+                    ['text' => ($lang === 'kh' ? 'ម៉ឺនុយដើម' : 'Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -603,11 +599,11 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? '📄 ដាក់ពាក្យ CV ឥឡូវនេះ' : '📄 Submit CV Now'), 'callback_data' => 'menu_submit_cv']
+                    ['text' => ($lang === 'kh' ? 'ដាក់ពាក្យ CV ឥឡូវនេះ' : 'Submit CV Now'), 'callback_data' => 'menu_submit_cv']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅ FAQ' : '🔙 Back to FAQ'), 'callback_data' => 'menu_faq'],
-                    ['text' => ($lang === 'kh' ? '🏠 ម៉ឺនុយដើម' : '🏠 Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅ FAQ' : 'Back to FAQ'), 'callback_data' => 'menu_faq'],
+                    ['text' => ($lang === 'kh' ? 'ម៉ឺនុយដើម' : 'Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -618,10 +614,10 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? '👤 ទាក់ទង Human Support ផ្ទាល់' : '👤 Contact Our Human Support'), 'url' => $contactUrl]
+                    ['text' => ($lang === 'kh' ? 'ទាក់ទង Human Support ផ្ទាល់' : 'Contact Support Directly'), 'url' => $contactUrl]
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅម៉ឺនុយដើម' : 'Back to Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -631,11 +627,11 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => ($lang === 'kh' ? '❌ លុបចោល' : '❌ Cancel'), 'callback_data' => 'menu_cancel_cv'],
-                    ['text' => ($lang === 'kh' ? '💬 សួរសំណួរ' : '💬 Ask Question Instead'), 'callback_data' => 'menu_ask_question']
+                    ['text' => ($lang === 'kh' ? 'លុបចោល' : 'Cancel'), 'callback_data' => 'menu_cancel_cv'],
+                    ['text' => ($lang === 'kh' ? 'សួរសំណួរ' : 'Ask Question Instead'), 'callback_data' => 'menu_ask_question']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅម៉ឺនុយដើម' : 'Back to Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
@@ -645,11 +641,11 @@ function getI18nKeyboard($key, $lang = 'en') {
         return [
             'inline_keyboard' => [
                 [
-                    ['text' => '🇰🇭 ភាសាខ្មែរ (Khmer)', 'callback_data' => 'lang_kh'],
-                    ['text' => '🇬🇧 English', 'callback_data' => 'lang_en']
+                    ['text' => 'ភាសាខ្មែរ (Khmer)', 'callback_data' => 'lang_kh'],
+                    ['text' => 'English', 'callback_data' => 'lang_en']
                 ],
                 [
-                    ['text' => ($lang === 'kh' ? '🔙 ត្រឡប់ទៅម៉ឺនុយដើម' : '🔙 Back to Main Menu'), 'callback_data' => 'menu_welcome']
+                    ['text' => ($lang === 'kh' ? 'ត្រឡប់ទៅម៉ឺនុយដើម' : 'Back to Main Menu'), 'callback_data' => 'menu_welcome']
                 ]
             ]
         ];
