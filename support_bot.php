@@ -493,44 +493,44 @@ function getI18nText($key, $lang = 'en', $params = []) {
             'kh' => "👋 <b>សូមស្វាគមន៍មកកាន់ សេវាបម្រើអតិថិជន FieldBi Cambodia!</b>\n✨ <i>ដៃគូផ្តល់ដំណោះស្រាយបច្ចេកវិទ្យា និងសូហ្វវែរ</i>\n\n<b>តើយើងអាចជួយអ្វីអ្នកបាននៅថ្ងៃនេះ?</b>\nសូមជ្រើសរើសជម្រើសខាងក្រោម ឬផ្ញើសាររបស់អ្នកផ្ទាល់៖\n\n💡 <i>ចំណាំ៖ អ្នកអាចផ្លាស់ប្តូរភាសាបានគ្រប់ពេលតាមរយៈប៊ូតុងខាងក្រោម។</i>"
         ],
         'submit_cv_prompt' => [
-            'en' => "📄 <b>SUBMIT CV / RESUME</b>\n────────────────────\nPlease upload your CV file (<b>PDF, DOC, DOCX, PNG</b>) below.\n\n⏳ <i>Waiting for your CV file upload...</i>",
-            'kh' => "📄 <b>ដាក់ពាក្យស្នើសុំការងារ (CV / RESUME)</b>\n────────────────────\nសូមបញ្ជូនឯកសារ CV របស់អ្នក (<b>PDF, DOC, DOCX, PNG</b>) នៅខាងក្រោម។\n\n⏳ <i>កំពុងរង់ចាំការផ្ញើឯកសារ CV របស់អ្នក...</i>"
+            'en' => "📄 <b>SUBMIT CV / RESUME</b>\n\nPlease upload your CV file (<b>PDF, DOC, DOCX, PNG</b>) below.\n\n⏳ <i>Waiting for your CV file upload...</i>",
+            'kh' => "📄 <b>ដាក់ពាក្យស្នើសុំការងារ (CV / RESUME)</b>\n\nសូមបញ្ជូនឯកសារ CV របស់អ្នក (<b>PDF, DOC, DOCX, PNG</b>) នៅខាងក្រោម។\n\n⏳ <i>កំពុងរង់ចាំការផ្ញើឯកសារ CV របស់អ្នក...</i>"
         ],
         'ask_question_prompt' => [
-            'en' => "💬 <b>ASK A QUESTION / HUMAN SUPPORT</b>\n────────────────────\nPlease type your message or question below, and our support team will assist you shortly!\n\n👤 <i>Or tap the button below to connect directly with our Human Support team.</i>",
-            'kh' => "💬 <b>សួរសំណួរ / ទាក់ទងក្រុមការងារ</b>\n────────────────────\nសូមវាយបញ្ចូលសារ ឬសំណួររបស់អ្នកនៅខាងក្រោម ក្រុមការងាររបស់យើងនឹងឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ!\n\n👤 <i>ឬចុចប៊ូតុងខាងក្រោមដើម្បីទាក់ទងផ្ទាល់ជាមួយក្រុមការងារ Human Support។</i>"
+            'en' => "💬 <b>ASK A QUESTION / HUMAN SUPPORT</b>\n\nPlease type your message or question below, and our support team will assist you shortly!\n\n👤 <i>Or tap the button below to connect directly with our Human Support team.</i>",
+            'kh' => "💬 <b>សួរសំណួរ / ទាក់ទងក្រុមការងារ</b>\n\nសូមវាយបញ្ចូលសារ ឬសំណួររបស់អ្នកនៅខាងក្រោម ក្រុមការងាររបស់យើងនឹងឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ!\n\n👤 <i>ឬចុចប៊ូតុងខាងក្រោមដើម្បីទាក់ទងផ្ទាល់ជាមួយក្រុមការងារ Human Support។</i>"
         ],
         'faq_menu' => [
-            'en' => "❓ <b>FREQUENTLY ASKED QUESTIONS</b>\n────────────────────\nPlease select a topic below to get instant answers:",
-            'kh' => "❓ <b>សំណួរដែលសួរញឹកញាប់ (FAQ)</b>\n────────────────────\nសូមជ្រើសរើសប្រធានបទខាងក្រោមដើម្បីទទួលបានចម្លើយភ្លាមៗ៖"
+            'en' => "❓ <b>FREQUENTLY ASKED QUESTIONS</b>\n\nPlease select a topic below to get instant answers:",
+            'kh' => "❓ <b>សំណួរដែលសួរញឹកញាប់ (FAQ)</b>\n\nសូមជ្រើសរើសប្រធានបទខាងក្រោមដើម្បីទទួលបានចម្លើយភ្លាមៗ៖"
         ],
         'faq_jobs' => [
-            'en' => "📋 <b>JOB OPENINGS</b>\n────────────────────\n• <b>Developer</b>\n• <b>Sales Representative</b>\n• <b>Marketing Officer</b>\n\n📄 <i>Tap /Submit_CV to apply directly!</i>",
-            'kh' => "📋 <b>ឱកាសការងារ</b>\n────────────────────\n• <b>Developer</b>\n• <b>Sales Representative</b>\n• <b>Marketing Officer</b>\n\n📄 <i>ចុច /Submit_CV ដើម្បីដាក់ពាក្យផ្ទាល់!</i>"
+            'en' => "📋 <b>JOB OPENINGS</b>\n\n• <b>Developer</b>\n• <b>Sales Representative</b>\n• <b>Marketing Officer</b>\n\n📄 <i>Tap /Submit_CV to apply directly!</i>",
+            'kh' => "📋 <b>ឱកាសការងារ</b>\n\n• <b>Developer</b>\n• <b>Sales Representative</b>\n• <b>Marketing Officer</b>\n\n📄 <i>ចុច /Submit_CV ដើម្បីដាក់ពាក្យផ្ទាល់!</i>"
         ],
         'faq_location' => [
-            'en' => "📍 <b>OFFICE LOCATION</b>\n────────────────────\n🏢 <b>FieldBi Cambodia</b>\n📍 6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">Open Location on Map</a>",
-            'kh' => "📍 <b>ទីតាំងការិយាល័យ</b>\n────────────────────\n🏢 <b>FieldBi Cambodia</b>\n📍 អគារ C7 ជាន់ទី 6, Olympia City, សង្កាត់វាលវង់, ខណ្ឌ 7 មករា, ភ្នំពេញ\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">ចុចទីនេះដើម្បីមើលលើផែនទី (Google Maps)</a>"
+            'en' => "📍 <b>OFFICE LOCATION</b>\n\n🏢 <b>FieldBi Cambodia</b>\n📍 6F C7, Olympia City, Sangkat Veal Vong, Khan 7 Makara, Phnom Penh, Cambodia\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">Open Location on Map</a>",
+            'kh' => "📍 <b>ទីតាំងការិយាល័យ</b>\n\n🏢 <b>FieldBi Cambodia</b>\n📍 អគារ C7 ជាន់ទី 6, Olympia City, សង្កាត់វាលវង់, ខណ្ឌ 7 មករា, ភ្នំពេញ\n\n🗺️ <b>Google Maps:</b> <a href=\"https://maps.app.goo.gl/LP7KziVkBsDzGSTx9\">ចុចទីនេះដើម្បីមើលលើផែនទី (Google Maps)</a>"
         ],
         'faq_hours' => [
-            'en' => "⏰ <b>WORKING HOURS</b>\n────────────────────\n• <b>Monday – Friday:</b> 8:00 AM – 5:00 PM (ICT)\n• <b>Saturday:</b> 8:00 AM – 12:00 PM\n• <b>Sunday:</b> Closed",
-            'kh' => "⏰ <b>ម៉ោងធ្វើការ</b>\n────────────────────\n• <b>ច័ន្ទ – សុក្រ:</b> 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n• <b>សៅរ៍:</b> 8:00 ព្រឹក – 12:00 ថ្ងៃត្រង់\n• <b>អាទិត្យ:</b> ឈប់សម្រាក"
+            'en' => "⏰ <b>WORKING HOURS</b>\n\n• <b>Monday – Friday:</b> 8:00 AM – 5:00 PM (ICT)\n• <b>Saturday:</b> 8:00 AM – 12:00 PM\n• <b>Sunday:</b> Closed",
+            'kh' => "⏰ <b>ម៉ោងធ្វើការ</b>\n\n• <b>ច័ន្ទ – សុក្រ:</b> 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n• <b>សៅរ៍:</b> 8:00 ព្រឹក – 12:00 ថ្ងៃត្រង់\n• <b>អាទិត្យ:</b> ឈប់សម្រាក"
         ],
         'invalid_cv' => [
-            'en' => "⚠️ <b>Invalid CV Format!</b>\n────────────────────\nPlease upload your CV as a valid file or image (<b>PDF, DOC, DOCX, PNG</b>). Plain text messages are not accepted.\n\n<i>If you wish to cancel or ask a question instead, tap /Ask_Question or /start.</i>",
-            'kh' => "⚠️ <b>ទម្រង់ CV មិនត្រឹមត្រូវ!</b>\n────────────────────\nសូមផ្ញើ CV ជាឯកសារ ឬរូបថត (<b>PDF, DOC, DOCX, PNG</b>) ប៉ុណ្ណោះ។ មិនទទួលសារអក្សរទទេទេ។\n\n<i>ប្រសិនបើអ្នកចង់លុបចោល ឬសួរសំណួរ សូមចុច /Ask_Question ឬ /start</i>"
+            'en' => "⚠️ <b>Invalid CV Format!</b>\n\nPlease upload your CV as a valid file or image (<b>PDF, DOC, DOCX, PNG</b>). Plain text messages are not accepted.\n\n<i>If you wish to cancel or ask a question instead, tap /Ask_Question or /start.</i>",
+            'kh' => "⚠️ <b>ទម្រង់ CV មិនត្រឹមត្រូវ!</b>\n\nសូមផ្ញើ CV ជាឯកសារ ឬរូបថត (<b>PDF, DOC, DOCX, PNG</b>) ប៉ុណ្ណោះ។ មិនទទួលសារអក្សរទទេទេ។\n\n<i>ប្រសិនបើអ្នកចង់លុបចោល ឬសួរសំណួរ សូមចុច /Ask_Question ឬ /start</i>"
         ],
         'cv_received' => [
-            'en' => "✅ <b>CV Received & Submitted!</b>\n────────────────────\nThank you, <b>{name}</b>! 📄\n\nOur HR & Recruitment team has received your application and CV details. We will review your profile and reach out to you shortly.\n\n💬 <i>If you need to send additional documents or updates, feel free to send them here anytime.</i>",
-            'kh' => "✅ <b>ទទួលបាន CV រួចរាល់ហើយ!</b>\n────────────────────\nសូមអរគុណ <b>{name}</b>! 📄\n\nក្រុមការងារធនធានមនុស្ស (HR) របស់យើងបានទទួល CV របស់អ្នកហើយ។ យើងនឹងពិនិត្យមើល និងទាក់ទងទៅអ្នកវិញក្នុងពេលឆាប់ៗនេះ。\n\n💬 <i>ប្រសិនបើអ្នកចង់ផ្ញើឯកសារបន្ថែម អ្នកអាចផ្ញើនៅទីនេះបានគ្រប់ពេល។</i>"
+            'en' => "✅ <b>CV Received & Submitted!</b>\n\nThank you, <b>{name}</b>! 📄\n\nOur HR & Recruitment team has received your application and CV details. We will review your profile and reach out to you shortly.\n\n💬 <i>If you need to send additional documents or updates, feel free to send them here anytime.</i>",
+            'kh' => "✅ <b>ទទួលបាន CV រួចរាល់ហើយ!</b>\n\nសូមអរគុណ <b>{name}</b>! 📄\n\nក្រុមការងារធនធានមនុស្ស (HR) របស់យើងបានទទួល CV របស់អ្នកហើយ។ យើងនឹងពិនិត្យមើល និងទាក់ទងទៅអ្នកវិញក្នុងពេលឆាប់ៗនេះ。\n\n💬 <i>ប្រសិនបើអ្នកចង់ផ្ញើឯកសារបន្ថែម អ្នកអាចផ្ញើនៅទីនេះបានគ្រប់ពេល។</i>"
         ],
         'auto_ack_open' => [
-            'en' => "👋 <b>Thank you for contacting FieldBi!</b>\n────────────────────\nOur support team has received your message and will respond to you shortly.",
-            'kh' => "👋 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ FieldBi!</b>\n────────────────────\nក្រុមការងាររបស់យើងបានទទួលសាររបស់អ្នកហើយ និងកំពុងរៀបចំឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ।"
+            'en' => "👋 <b>Thank you for contacting FieldBi!</b>\n\nOur support team has received your message and will respond to you shortly.",
+            'kh' => "👋 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ FieldBi!</b>\n\nក្រុមការងាររបស់យើងបានទទួលសាររបស់អ្នកហើយ និងកំពុងរៀបចំឆ្លើយតបជូនអ្នកក្នុងពេលឆាប់ៗនេះ।"
         ],
         'auto_ack_closed' => [
-            'en' => "🌙 <b>Thank you for contacting FieldBi!</b>\n────────────────────\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!",
-            'kh' => "🌙 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ FieldBi!</b>\n────────────────────\nពេលនេះការិយាល័យរបស់យើងត្រូវបានបិទសម្រាក។\n⏰ <b>ម៉ោងធ្វើការ:</b> ច័ន្ទ – សុក្រ, 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n\nសាររបស់អ្នកត្រូវបានកត់ត្រាទុក ហើយក្រុមការងារនឹងឆ្លើយតបភ្លាមៗនៅពេលបើកដំណើរការឡើងវិញ!"
+            'en' => "🌙 <b>Thank you for contacting FieldBi!</b>\n\nOur office is currently closed.\n⏰ <b>Business Hours:</b> Mon – Fri, 8:00 AM – 5:00 PM (ICT)\n\nYour message has been received, and our team will respond as soon as we open!",
+            'kh' => "🌙 <b>សូមអរគុណសម្រាប់ការទាក់ទងមកកាន់ FieldBi!</b>\n\nពេលនេះការិយាល័យរបស់យើងត្រូវបានបិទសម្រាក។\n⏰ <b>ម៉ោងធ្វើការ:</b> ច័ន្ទ – សុក្រ, 8:00 ព្រឹក – 5:00 ល្ងាច (ICT)\n\nសាររបស់អ្នកត្រូវបានកត់ត្រាទុក ហើយក្រុមការងារនឹងឆ្លើយតបភ្លាមៗនៅពេលបើកដំណើរការឡើងវិញ!"
         ],
         'lang_prompt' => [
             'en' => "🌐 <b>SELECT LANGUAGE / ជ្រើសរើសភាសា</b>\n\nPlease select your preferred language below:",
@@ -1742,8 +1742,8 @@ function processSupportBotUpdate($update) {
             setUserMode($userChatId, 'general');
             answerCallbackQuery($cbId, $userLang === 'kh' ? "❌ បានលុបចោល" : "❌ Cancelled");
             $cancelMsg = $userLang === 'kh'
-                ? "❌ <b>បានលុបចោល!</b>\n────────────────────\nអ្នកបានចាកចេញពីទម្រង់ផ្ញើ CV ហើយ។ អ្នកអាចវាយបញ្ជូនសារ ឬសំណួររបស់អ្នកនៅទីនេះបាន។"
-                : "❌ <b>Cancelled!</b>\n────────────────────\nYou have exited CV submission mode. Feel free to send any message or question below!";
+                ? "❌ <b>បានលុបចោល!</b>\n\nអ្នកបានចាកចេញពីទម្រង់ផ្ញើ CV ហើយ។ អ្នកអាចវាយបញ្ជូនសារ ឬសំណួររបស់អ្នកនៅទីនេះបាន។"
+                : "❌ <b>Cancelled!</b>\n\nYou have exited CV submission mode. Feel free to send any message or question below!";
             sendMessage($userChatId, $cancelMsg, getI18nKeyboard('welcome', $userLang));
             return;
         }
@@ -2262,8 +2262,8 @@ function processSupportBotUpdate($update) {
             setUserMode($chatId, 'general');
             $userLang = getUserLang($chatId);
             $cancelMsg = $userLang === 'kh'
-                ? "❌ <b>បានលុបចោល!</b>\n────────────────────\nអ្នកបានចាកចេញពីទម្រង់ផ្ញើ CV ហើយ។ អ្នកអាចវាយបញ្ជូនសារ ឬសំណួររបស់អ្នកនៅទីនេះបាន។"
-                : "❌ <b>Cancelled!</b>\n────────────────────\nYou have exited CV submission mode. Feel free to send any message or question below!";
+                ? "❌ <b>បានលុបចោល!</b>\n\nអ្នកបានចាកចេញពីទម្រង់ផ្ញើ CV ហើយ។ អ្នកអាចវាយបញ្ជូនសារ ឬសំណួររបស់អ្នកនៅទីនេះបាន។"
+                : "❌ <b>Cancelled!</b>\n\nYou have exited CV submission mode. Feel free to send any message or question below!";
             sendMessage($chatId, $cancelMsg, getI18nKeyboard('welcome', $userLang));
             return;
         }
